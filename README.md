@@ -1,5 +1,9 @@
 # SIIT Roadmap
 
+[![tests](https://img.shields.io/badge/tests-133%20passed-brightgreen)](docs/CONTRIBUTING.md)
+[![python](https://img.shields.io/badge/python-3.13-blue)](backend/requirements.txt)
+[![data](https://img.shields.io/badge/skills-73%20%C2%B7%20O*NET--linked-informational)](docs/DECISIONS.md)
+
 > **เว็บหางานบอกว่ามีงานอะไร — ของเราบอกว่าจะไปถึงงานนั้นได้ยังไง**
 > และต่างจากเว็บหางานตรงที่เราไม่เชื่อสิ่งที่ผู้ใช้กรอกอย่างเดียว **เราอ่านจากผลงานจริงของเขา**
 

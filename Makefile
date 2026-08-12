@@ -1,0 +1,60 @@
+PY      := backend/.venv/bin/python
+PIP     := backend/.venv/bin/pip
+PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
+ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
+
+.PHONY: help setup venv deps onet pipeline backend frontend test lint clean reset
+
+help:
+	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
+	@echo "make backend    รัน API ที่พอร์ต 8000 (เอกสารที่ /docs)"
+	@echo "make frontend   รันหน้าเว็บที่พอร์ต 3000"
+	@echo "make test       รันเทสต์ทั้งหมด — ต้องเขียวก่อน push เสมอ"
+	@echo "make pipeline   สร้างข้อมูลจาก O*NET ใหม่"
+	@echo "make reset      ลบฐานข้อมูลแล้ว seed ใหม่"
+
+setup: venv deps onet pipeline
+	@echo ""
+	@echo "พร้อมแล้ว — เปิดสองหน้าต่าง:  make backend   |   make frontend"
+
+venv:
+	@test -d backend/.venv || $(PYTHON) -m venv backend/.venv
+
+deps: venv
+	@$(PIP) install -q --upgrade pip
+	@$(PIP) install -q -r backend/requirements.txt
+	@echo "[deps] ติดตั้ง Python เรียบร้อย"
+	@test -d frontend && (cd frontend && npm install) || echo "[deps] ยังไม่มี frontend/ — ข้ามไปก่อน"
+
+# ไฟล์ O*NET 106 MB ไม่ได้อยู่ใน repo (ดู .gitignore) — ดึงใหม่ได้ตลอด
+onet:
+	@mkdir -p pipeline/cache
+	@test -f pipeline/cache/onet.zip || \
+		(echo "[onet] กำลังดาวน์โหลด 13 MB…" && curl -sL -o pipeline/cache/onet.zip $(ONET_URL))
+	@test -d pipeline/cache/onet || unzip -q pipeline/cache/onet.zip -d pipeline/cache/onet
+	@echo "[onet] พร้อมใช้"
+
+pipeline: onet
+	@$(PY) pipeline/1_import_onet.py
+	@$(PY) pipeline/1b_import_instruments.py
+
+backend:
+	@cd backend && .venv/bin/python -m uvicorn app.main:app --reload --port 8000
+
+frontend:
+	@test -d frontend || (echo "ยังไม่มี frontend/ — ดู docs/TEAM.md ว่าใครเป็นเจ้าของ" && exit 1)
+	@cd frontend && npm run dev
+
+test:
+	@cd backend && .venv/bin/python -m pytest tests/ -q
+
+lint:
+	@test -d frontend && (cd frontend && npx tsc --noEmit && npx eslint app components lib) || true
+
+reset:
+	@rm -f backend/siit_roadmap.db
+	@echo "[reset] ลบฐานข้อมูลแล้ว — seed ใหม่ตอนรัน make backend ครั้งถัดไป"
+
+clean: reset
+	@find . -name __pycache__ -type d -prune -exec rm -rf {} +
+	@rm -rf backend/.pytest_cache frontend/.next

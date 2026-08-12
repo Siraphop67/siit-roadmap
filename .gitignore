@@ -1,0 +1,41 @@
+# ═══ Python ═══
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# ═══ ฐานข้อมูล — สร้างใหม่ได้เสมอจาก seed ═══
+*.db
+*.db-shm
+*.db-wal
+
+# ═══ Node / Next.js ═══
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# ═══ env — ห้ามเข้า repo เด็ดขาด ═══
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ═══ 🔴 ไฟล์ต้นฉบับ O*NET — 106 MB ═══
+# ดาวน์โหลดใหม่ได้ตลอดด้วย  make onet
+# ผลที่ได้จากท่อ (pipeline/out/) เก็บใน repo เพราะเว็บต้องใช้และไฟล์เล็ก
+pipeline/cache/
+
+# ═══ 🔴 ข้อมูลส่วนบุคคล ═══
+# CV ที่ผู้ใช้อัปโหลดระหว่างทดสอบ ห้ามหลุดเข้า repo ไม่ว่ากรณีใด
+data/uploads/
+data/cv/
+*.resume.pdf
+
+# ═══ ระบบปฏิบัติการ / เครื่องมือ ═══
+.DS_Store
+.idea/
+.vscode/
+*.log

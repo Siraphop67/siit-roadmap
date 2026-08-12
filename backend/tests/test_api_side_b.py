@@ -1,0 +1,272 @@
+"""เดินครบวงจรฝั่ง "รู้แล้วว่าอยากไปไหน" ผ่าน API จริง
+
+หน้าแรก → คลังอาชีพ → โปรไฟล์ → ส่งผลงาน → ตรวจผลสกัด → เลือกเป้าหมาย → ROADMAP → ลบข้อมูล
+"""
+
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.db import get_db
+from app.main import app
+from app.seed.loader import create_all, seed
+
+CV = """สมชาย ใจดี — นักศึกษาวิศวกรรมคอมพิวเตอร์ ปี 3
+
+โครงงานและประสบการณ์
+- ทำระบบวิเคราะห์ข้อมูลการใช้ห้องเรียนด้วย Python และ pandas
+- สร้าง REST API ด้วย FastAPI ต่อกับ PostgreSQL ใช้ SQL ดึงข้อมูล
+- ดูแลโค้ดด้วย Git เขียน unit test ด้วย pytest ทุกฟีเจอร์
+- ทำ dashboard ด้วย Power BI ให้หัวหน้าไลน์ดูของเสียรายวัน
+- ใช้ Docker และ Linux ในการ deploy
+TOEIC 780
+"""
+
+
+@pytest.fixture(scope="module")
+def client(tmp_path_factory):
+    db_path = tmp_path_factory.mktemp("db") / "sideb.db"
+    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    TestingSession = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    create_all(engine)
+    with TestingSession() as db:
+        seed(db)
+
+    def override():
+        db = TestingSession()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def user(client) -> str:
+    return client.post("/api/session", json={"entry": "known"}).json()["user_id"]
+
+
+# ═══════════ ข้อมูลตั้งต้น ═══════════
+
+
+def test_health_reports_what_actually_loaded(client):
+    h = client.get("/api/health").json()
+    assert h["skills"] == 73
+    assert h["skill_edges"] == 105
+    assert h["career_targets"] == 8
+    assert h["learning_resources"] == 72
+    assert h["extractor_is_real_llm"] is False, "ยังไม่มี LLM key — ต้องรายงานตามจริง"
+
+
+def test_meta_states_plainly_what_is_not_real_yet(client):
+    m = client.get("/api/meta").json()
+    assert len(m["fields"]) == 7
+    assert "ประกาศงานจริง" in m["notes"]["data"]
+    assert "ไม่ใช่ LLM" in m["notes"]["extractor"]
+
+
+# ═══════════ คลังอาชีพ ═══════════
+
+
+def test_targets_list_covers_every_field(client):
+    data = client.get("/api/targets").json()
+    covered = {f for t in data["targets"] for f in t["field_whitelist"]}
+    assert covered == {"CE", "CPE", "ChE", "EE", "IE", "ME", "DE"}
+
+
+def test_target_detail_shows_requirements_and_admits_missing_data(client):
+    d = client.get("/api/targets/SW-DEV").json()
+    assert d["requirements"]
+    assert d["data_status"] == "placeholder"
+    assert all(r["appears_in_n_postings"] == 0 for r in d["requirements"]), (
+        "ยังไม่ได้เก็บประกาศงานจริง จำนวนต้องเป็น 0 ไม่ใช่ตัวเลขที่แต่งขึ้น"
+    )
+
+
+def test_scholarship_obligation_filters_targets_with_a_reason(client, user):
+    client.post("/api/profile", json={
+        "user_id": user, "education_level": "ปี 3", "obligation_id": "gov"})
+    data = client.get("/api/targets", params={"user_id": user}).json()
+    assert data["filtered_out"], "เงื่อนไขชดใช้ทุนไม่ได้กรองอะไรออกเลย"
+    for f in data["filtered_out"]:
+        assert f["reasons"] and any("ชดใช้ทุน" in r["message"] for r in f["reasons"])
+
+
+def test_being_year_one_does_not_hide_targets(client, user):
+    client.post("/api/profile", json={
+        "user_id": user, "education_level": "ปี 1", "year": 1, "obligation_id": "none"})
+    data = client.get("/api/targets", params={"user_id": user}).json()
+    assert len(data["targets"]) == 8
+    assert any(t["conditions_at_application"] for t in data["targets"])
+
+
+# ═══════════ ส่งผลงาน + ตรวจผลสกัด ═══════════
+
+
+def test_document_is_refused_without_consent(client, user):
+    r = client.post("/api/portfolio/text", json={
+        "user_id": user, "text": CV, "consent": False})
+    assert r.status_code == 400
+    assert "ยินยอม" in r.json()["detail"]
+
+
+def test_short_text_is_refused(client, user):
+    r = client.post("/api/portfolio/text", json={
+        "user_id": user, "text": "Python", "consent": True})
+    assert r.status_code == 400
+
+
+@pytest.fixture
+def with_cv(client, user) -> tuple[str, str]:
+    r = client.post("/api/portfolio/text", json={
+        "user_id": user, "text": CV, "consent": True})
+    assert r.status_code == 200, r.text
+    return user, r.json()["document_id"]
+
+
+def test_extraction_finds_skills_and_every_span_is_real(client, with_cv):
+    """🔒 ทุกหลักฐานต้องชี้กลับไปที่ข้อความจริงใน CV"""
+    _user_id, doc_id = with_cv
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    assert d["extracted"], "สกัดอะไรไม่ได้เลย"
+    raw = d["raw_text"]
+    for e in d["extracted"]:
+        assert raw[e["span_start"]:e["span_end"]] == e["span_text"]
+        assert e["user_status"] == "pending", "ต้องรอผู้ใช้ยืนยันก่อนถึงนับ"
+
+
+def test_pending_skills_do_not_count_until_confirmed(client, with_cv):
+    user_id, _doc = with_cv
+    me = client.get("/api/me", params={"user_id": user_id}).json()
+    assert me["skills_from_cv"] == [], "ยังไม่ยืนยัน ต้องยังไม่นับ"
+
+
+def test_confirming_makes_skills_count(client, with_cv):
+    user_id, doc_id = with_cv
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    decisions = {e["id"]: "confirmed" for e in d["extracted"]}
+    r = client.post(f"/api/portfolio/{doc_id}/confirm",
+                    json={"user_id": user_id, "decisions": decisions})
+    assert r.status_code == 200
+    assert r.json()["confirmed_skills"]
+
+    me = client.get("/api/me", params={"user_id": user_id}).json()
+    got = {s["skill_id"] for s in me["skills_from_cv"]}
+    for expected in ("T-PY", "T-SQL", "T-GIT", "SW-API"):
+        assert expected in got
+
+
+def test_rejecting_removes_a_skill(client, with_cv):
+    user_id, doc_id = with_cv
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    target = next(e for e in d["extracted"] if e["skill_id"] == "T-PY")
+    client.post(f"/api/portfolio/{doc_id}/confirm",
+                json={"user_id": user_id, "decisions": {target["id"]: "rejected"}})
+    me = client.get("/api/me", params={"user_id": user_id}).json()
+    assert "T-PY" not in {s["skill_id"] for s in me["skills_from_cv"]}
+
+
+def test_github_link_is_accepted(client, user):
+    r = client.post("/api/portfolio/github", json={
+        "user_id": user, "url": "https://github.com/psf/requests", "consent": True})
+    if r.status_code == 400 and "ต่อ GitHub" in r.json().get("detail", ""):
+        pytest.skip("ไม่มีเน็ตหรือโดนจำกัดอัตราการเรียก")
+    assert r.status_code == 200
+    assert r.json()["char_count"] > 200
+
+
+# ═══════════ ROADMAP ═══════════
+
+
+@pytest.fixture
+def ready(client, with_cv) -> str:
+    user_id, doc_id = with_cv
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    client.post(f"/api/portfolio/{doc_id}/confirm", json={
+        "user_id": user_id, "decisions": {e["id"]: "confirmed" for e in d["extracted"]}})
+    client.post("/api/profile", json={
+        "user_id": user_id, "field": "CPE", "education_level": "ปี 3", "year": 3,
+        "hours_per_week": 8, "budget_baht": 2000, "obligation_id": "none",
+        "self_reported_skills": {"F-SOLVE": 2}})
+    client.post("/api/goal", json={"user_id": user_id, "target_id": "SW-DEV"})
+    return user_id
+
+
+def test_roadmap_needs_a_goal_first(client, user):
+    r = client.get("/api/roadmap", params={"user_id": user})
+    assert r.status_code == 409
+
+
+def test_roadmap_walks_end_to_end(client, ready):
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    assert rm["target"]["id"] == "SW-DEV"
+    assert rm["steps"], "roadmap ว่างเปล่า"
+    assert rm["total_steps"] == len(rm["steps"])
+    assert any(s["actionable"] for s in rm["steps"])
+
+
+def test_every_step_offers_at_least_one_way_forward(client, ready):
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    for s in rm["steps"]:
+        assert s["options"], f'ก้าว {s["skill_id"]} ไม่มีทางไปถึงเลย'
+
+
+def test_roadmap_separates_cv_evidence_from_self_reported(client, ready):
+    """จุดขายของผลิตภัณฑ์ — ต้องบอกได้ว่าทักษะไหนพิสูจน์ได้"""
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    assert rm["evidence_summary"]["from_cv"] > 0
+    assert rm["evidence_summary"]["self_reported"] > 0
+    kinds = {s["evidence_kind"] for s in rm["steps"] if s["evidence_kind"]}
+    assert kinds <= {"extracted", "self_reported", "both"}
+
+
+def test_roadmap_marks_flexible_steps(client, ready):
+    """กลไก "ทำเมื่อไหร่ก็ได้" จาก roadmap.sh"""
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    assert any(s["status"] == "flexible" for s in rm["steps"])
+    assert "flexible" in rm["legend"]
+
+
+def test_roadmap_sends_both_order_and_edges(client, ready):
+    """หน้าเว็บต้องเลือกวาดเป็นรายการหรือกราฟก็ได้ — UI ยังไม่ตัดสินใจ"""
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    ids = {s["skill_id"] for s in rm["steps"]}
+    assert all(s["order_no"] > 0 for s in rm["steps"])
+    for e in rm["edges"]:
+        assert e["from"] in ids and e["to"] in ids
+
+
+def test_options_that_do_not_fit_say_why(client, ready):
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    blocked = [o for s in rm["steps"] for o in s["options"] if not o["fits"]]
+    for o in blocked:
+        assert o["blocked_reason"]
+
+
+def test_having_more_skills_shortens_the_roadmap(client, ready):
+    """เทียบคนที่ยืนยันทักษะจาก CV แล้ว กับคนที่เพิ่งเข้ามาใหม่"""
+    fresh = client.post("/api/session", json={"entry": "known"}).json()["user_id"]
+    client.post("/api/goal", json={"user_id": fresh, "target_id": "SW-DEV"})
+
+    long_one = client.get("/api/roadmap", params={"user_id": fresh}).json()
+    short_one = client.get("/api/roadmap", params={"user_id": ready}).json()
+    assert short_one["total_steps"] < long_one["total_steps"]
+    assert short_one["coverage"] > long_one["coverage"]
+
+
+# ═══════════ PDPA ═══════════
+
+
+def test_delete_removes_everything(client, ready):
+    r = client.delete("/api/me", params={"user_id": ready})
+    assert r.status_code == 200
+    assert r.json()["deleted"]
+    assert r.json()["rows"]["user_document"] >= 1
+    assert client.get("/api/me", params={"user_id": ready}).status_code == 404

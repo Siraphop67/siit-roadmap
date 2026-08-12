@@ -3,7 +3,7 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend test lint clean reset demo-user check-postings
+.PHONY: help setup venv deps onet pipeline backend frontend test lint clean reset demo-user check-postings postings
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
@@ -12,6 +12,7 @@ help:
 	@echo "make test       รันเทสต์ทั้งหมด — ต้องเขียวก่อน push เสมอ"
 	@echo "make demo-user  สร้างผู้ใช้ตัวอย่างที่เดินครบเส้นแล้ว (ต้องเปิด make backend ค้างไว้)"
 	@echo "make check-postings  ตรวจประกาศงานที่เก็บมาว่ากรอกถูกรูปแบบไหม"
+	@echo "make postings   แปลงประกาศงานที่เก็บมาเป็น requirement (ท่อขั้นที่ 2)"
 	@echo "make pipeline   สร้างข้อมูลจาก O*NET ใหม่"
 	@echo "make reset      ลบฐานข้อมูลแล้ว seed ใหม่"
 
@@ -59,6 +60,11 @@ demo-user:
 # ด่านตรวจของคนเก็บประกาศงาน — ไม่ต้องเปิด backend ไม่แตะฐานข้อมูล
 check-postings:
 	@cd backend && .venv/bin/python scripts/check_postings.py
+
+# ท่อขั้นที่ 2 — แปลงประกาศงานที่เก็บมาเป็น requirement
+# รันทุกครั้งที่เก็บประกาศเพิ่ม แล้ว make backend อีกรอบ · MIN=1 ตอนยังเก็บได้น้อย
+postings:
+	@$(PY) pipeline/2_extract_postings.py --min-postings $(or $(MIN),2)
 
 lint:
 	@test -d frontend && (cd frontend && npx tsc --noEmit && npx eslint app components lib) || true

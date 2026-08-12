@@ -92,7 +92,13 @@ export type TargetRequirementView = {
   name_th: string;
   min_level: number;
   importance: number;
+  /** พบในประกาศงานจริงกี่ประกาศ · 0 = ยังไม่มีประกาศยืนยัน */
   appears_in_n_postings: number;
+  /**
+   * 🔒 requirement ข้อนี้มาจากไหน — หน้าจอต้องแสดงต่างกัน (กติกาข้อ 5)
+   * `curated` ทีมเขียนเอง · `postings` พบในประกาศจริง · `both` ทั้งคู่ (แข็งแรงที่สุด)
+   */
+  source: "curated" | "postings" | "both";
 };
 
 export type TargetDetail = {

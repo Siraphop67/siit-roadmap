@@ -273,6 +273,8 @@ def target_detail(target_id: str, db: Session = Depends(get_db)) -> dict:
                 "skill_id": r.skill_id, "name_th": names.get(r.skill_id, r.skill_id),
                 "min_level": r.min_level, "importance": r.importance,
                 "appears_in_n_postings": r.appears_in_n_postings,
+                # 🔒 หน้าจอต้องแยกข้อที่ยืนยันได้จากประกาศจริง ออกจากข้อที่ทีมเขียนเอง
+                "source": r.source,
             }
             for r in reqs
         ],

@@ -21,6 +21,7 @@ from app.models import (
     ActivityItem,
     Base,
     CareerTarget,
+    JobPosting,
     LearningResource,
     ResourceSkill,
     Skill,
@@ -31,6 +32,8 @@ from app.models import (
 )
 from app.seed.activities import ACTIVITY_GROUPS_TH, ACTIVITY_ITEMS, WORK_ACTIVITIES_TH
 from app.seed.careers import CAREER_TARGETS
+from app.seed.postings import load_all as load_postings
+from app.seed.postings import to_row as posting_row
 from app.seed.resources import LEARNING_RESOURCES
 from app.seed.skills import ORDER_FLEXIBLE, SKILL_EDGES, SKILLS
 
@@ -144,6 +147,27 @@ def seed(db: Session) -> dict[str, int]:
         for skill_id, level in r["teaches"]:
             db.add(ResourceSkill(resource_id=r["id"], skill_id=skill_id, reaches_level=level))
 
+    # ── ประกาศงานจริงที่ 🅴 เก็บมา (data/postings/*.md) ──
+    # ยังว่างอยู่จนกว่าจะมีคนเก็บ · ไฟล์ที่ยังผิดรูปแบบจะถูกข้าม ไม่ทำให้ระบบบูตไม่ขึ้น
+    # 🔒 posting_count ของอาชีพนับจากของจริงเท่านั้น ไม่มีไฟล์ = 0 และต้องเป็น 0
+    postings = load_postings(target_ids={t["id"] for t in CAREER_TARGETS})
+    good = [p for p in postings if p.ok]
+    if bad := [p for p in postings if not p.ok]:
+        print(f"[seed] ⚠️  ประกาศงาน {len(bad)} ไฟล์ยังผิดรูปแบบ จึงข้ามไป — ดูด้วย make check-postings")
+    for p in good:
+        _upsert(db, JobPosting, p.id, posting_row(p))
+    db.flush()
+
+    counted: dict[str, int] = {}
+    for p in good:
+        if tid := p.meta.get("target_id"):
+            counted[tid] = counted.get(tid, 0) + 1
+    for t in CAREER_TARGETS:
+        row = db.get(CareerTarget, t["id"])
+        n = counted.get(t["id"], 0)
+        if row and row.posting_count != n:
+            row.posting_count = n
+
     db.commit()
     return {
         "skill": len(SKILLS),
@@ -153,6 +177,7 @@ def seed(db: Session) -> dict[str, int]:
         "career_target": len(CAREER_TARGETS),
         "target_requirement": sum(len(t["requirements"]) for t in CAREER_TARGETS),
         "learning_resource": len(LEARNING_RESOURCES),
+        "job_posting": len(good),
     }
 
 

@@ -35,7 +35,12 @@ export type Meta = {
   sectors: Record<string, string>;
   resource_kinds: Record<ResourceKind, string>;
   extractor: string;
-  /** 🔴 ข้อความบอกข้อจำกัดตามจริง — เอาขึ้นจอ อย่าเก็บไว้เฉย ๆ */
+  /** ประกาศงานจริงที่เก็บมาแล้ว — 0 = requirement ยังเป็นชุดที่ทีมเขียนเอง */
+  job_postings: number;
+  /**
+   * 🔴 ข้อความบอกข้อจำกัดตามจริง — เอาขึ้นจอ อย่าเก็บไว้เฉย ๆ
+   * `notes.data` เปลี่ยนเองตามจำนวนประกาศงานที่มีจริง อย่า hardcode ฝั่งหน้าเว็บ
+   */
   notes: { data: string; extractor: string };
 };
 
@@ -49,6 +54,8 @@ export type Health = {
   skill_edges: number;
   career_targets: number;
   learning_resources: number;
+  /** 🔒 เป็น 0 จนกว่า 🅴 จะเก็บประกาศงานจริง — อย่าให้หน้าจอพูดเกินตัวเลขนี้ */
+  job_postings: number;
 };
 
 // ══════════════════════ คลังอาชีพ ══════════════════════

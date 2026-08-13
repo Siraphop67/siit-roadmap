@@ -3,7 +3,7 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings
+.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings try-extractor
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
@@ -14,6 +14,7 @@ help:
 	@echo "make demo-user  สร้างผู้ใช้ตัวอย่างที่เดินครบเส้นแล้ว (ต้องเปิด make backend ค้างไว้)"
 	@echo "make check-postings  ตรวจประกาศงานที่เก็บมาว่ากรอกถูกรูปแบบไหม"
 	@echo "make postings   แปลงประกาศงานที่เก็บมาเป็น requirement (ท่อขั้นที่ 2)"
+	@echo "make try-extractor  ลองตัวสกัดกับ CV จริง — P=local M=รุ่น CV=ไฟล์"
 	@echo "make pipeline   สร้างข้อมูลจาก O*NET ใหม่"
 	@echo "make reset      ลบฐานข้อมูลแล้ว seed ใหม่"
 
@@ -73,6 +74,12 @@ postings:
 
 # typegen ก่อน tsc เสมอ — Next 16 สร้าง type ของ route/layout ตอน build
 # clone ใหม่ที่ยังไม่เคย build จะเจอ "Cannot find name 'LayoutProps'" ถ้าข้ามขั้นนี้
+# ลองตัวสกัดโดยไม่ต้องเปิด backend · P=keyword|local|anthropic · เทียบกัน: CMP=1
+try-extractor:
+	@cd backend && .venv/bin/python scripts/try_extractor.py \
+		--provider $(or $(P),$(shell grep -s '^LLM_PROVIDER=' backend/.env | cut -d= -f2)keyword) \
+		$(if $(M),--model $(M)) $(if $(CV),--cv $(CV)) $(if $(CMP),--compare)
+
 lint:
 	@test -d frontend && (cd frontend && npx next typegen && npx tsc --noEmit && npx eslint app lib) || true
 

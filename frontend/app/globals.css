@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
+/**
+ * โทเคนสีของทั้งเว็บ — ทุกหน้าใช้ชุดนี้ ไม่ตั้งสีเองรายหน้า
+ *
+ * 🔴 สีผูกกับความหมาย ไม่ใช่ความสวย
+ *    accent  ทางที่เดินต่อได้ · ปุ่มหลัก
+ *    warn    เงื่อนไขที่ยังไม่ผ่าน แต่ยังไปถึงได้ (ชั้นปี · เกรด)
+ *    stop    เงื่อนไขถาวรที่ตัดออกจริง (สาขา · ทุน)
+ *    ห้ามใช้ stop กับเงื่อนไขตามเวลา เพราะจะอ่านเหมือนปิดประตู ทั้งที่แค่ยังไม่ถึงเวลา
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --surface: #f7f7f8;
+  --foreground: #17171a;
+  --muted: #62626b;
+  --faint: #8e8e97;
+  --line: #e3e3e7;
+  --line-strong: #c9c9d0;
+  --accent: #1f5f4d;
+  --accent-soft: #e8f2ee;
+  --warn: #8a5a12;
+  --warn-soft: #fdf3e2;
+  --stop: #9b2c2c;
+  --stop-soft: #fceeee;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0d0d0f;
+    --surface: #16161a;
+    --foreground: #ededf0;
+    --muted: #a5a5ad;
+    --faint: #7c7c86;
+    --line: #26262c;
+    --line-strong: #3a3a43;
+    --accent: #63bfa3;
+    --accent-soft: #12251f;
+    --warn: #e0b062;
+    --warn-soft: #2a2113;
+    --stop: #e88b8b;
+    --stop-soft: #2a1616;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-stop: var(--stop);
+  --color-stop-soft: var(--stop-soft);
+  --font-sans: var(--font-sans-th);
+  --font-mono: var(--font-mono-th);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans-th), system-ui, sans-serif;
+}
+
+/* กลุ่มเป้าหมายเข้าผ่านมือถือเป็นหลัก — ความกว้างที่อ่านง่ายคุมไว้ที่นี่ที่เดียว */
+.shell {
+  width: 100%;
+  max-width: 62rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
 }

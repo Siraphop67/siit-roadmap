@@ -140,7 +140,6 @@ def test_ห่อด้วยmarkdownfenceยังอ่านได้():
     {"skill_id": REAL_SKILL},                                 # ไม่มี span_text
     {"skill_id": REAL_SKILL, "span_text": ""},                # span_text ว่าง
     {"skill_id": 123, "span_text": "Python และ pandas"},      # skill_id ไม่ใช่สตริง
-    {"skill_id": REAL_SKILL, "span_text": "Python และ pandas", "level": "สอง"},
     "ไม่ใช่ dict เลย",
 ])
 def test_แถวที่ผิดรูปแบบถูกข้ามทีละแถวไม่ทำให้ทั้งชุดพัง(bad):
@@ -149,6 +148,27 @@ def test_แถวที่ผิดรูปแบบถูกข้ามท�
     assert [s.skill_id for s in spans] == [OTHER_SKILL], (
         "LLM พลาดบางข้อเป็นเรื่องปกติ แต่ทิ้งผลทั้งชุดเพราะข้อเดียวไม่ใช่"
     )
+
+
+@pytest.mark.parametrize("given,expected", [
+    ("high", 3), ("medium", 2), ("low", 1), ("สูง", 3),   # โมเดลชอบตอบเป็นคำ
+    ("ไม่รู้", 1), (None, 1),                              # อ่านไม่ออก → ค่าตั้งต้น ไม่ใช่ทิ้งแถว
+])
+def test_ระดับที่ตอบเป็นคำแปลให้แทนที่จะทิ้งทั้งแถว(given, expected):
+    """🔴 เคยพลาดมาแล้ว: gemma4 ตอบ confidence:"high" แล้วทั้ง 15 แถวถูกทิ้ง
+
+    ทั้งที่ skill_id กับ span_text ถูกต้องทุกแถวและชี้กลับไปที่เอกสารได้
+    หลักฐานที่แท้จริงคือ span ไม่ใช่ตัวเลขระดับ — ทิ้งของดีเพราะฟิลด์รองผิดรูปแบบคือแพงเกินไป
+    """
+    spans = parse_payload(payload(row(level=given)), CV, KNOWN)
+    assert len(spans) == 1, "แถวต้องไม่ถูกทิ้งเพราะระดับอ่านไม่ออก"
+    assert spans[0].level == expected
+
+
+def test_ความมั่นใจที่ตอบเป็นคำก็แปลให้():
+    spans = parse_payload(payload(row(confidence="high")), CV, KNOWN)
+    assert len(spans) == 1
+    assert spans[0].confidence == 1.0
 
 
 def test_skillsหายไปทั้งคีย์ถือว่าไม่เจอทักษะ():

@@ -25,40 +25,15 @@
 
 from __future__ import annotations
 
-import json
-import re
-
 from app.config import settings
-from app.llm.base import ExtractedSpan, enforce_span_guard
+from app.llm.base import (
+    MAX_TOKENS,
+    SYSTEM_PROMPT,
+    ExtractedSpan,
+    ExtractorError,
+    parse_payload,
+)
 from app.seed.skills import SKILLS
-
-MAX_TOKENS = 4000
-
-SYSTEM_PROMPT = """คุณคือตัวสกัดหลักฐานความสามารถจากเรซูเม่ของนักศึกษาวิศวกรรม
-
-หน้าที่: อ่านเอกสาร แล้วบอกว่ามีหลักฐานของทักษะใดในรายการบ้าง
-
-กติกาที่ห้ามละเมิด:
-1. span_text ต้องคัดลอกจากเอกสารต้นฉบับแบบ "ตรงตัวอักษรต่ออักษร" ห้ามเรียบเรียงใหม่
-2. ถ้าไม่มีข้อความในเอกสารที่รองรับทักษะนั้น ห้ามใส่ทักษะนั้นลงไป
-3. ระดับ: 1 = เอ่ยถึงหรือเคยเรียน · 2 = เคยใช้ในงานหรือโครงงาน · 3 = ใช้เป็นหลักและมีผลลัพธ์
-4. ห้ามเดาจากสาขาที่เรียน ให้ดูจากสิ่งที่เขียนไว้ในเอกสารเท่านั้น
-
-ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอก JSON:
-{"skills":[{"skill_id","span_text","level","confidence"}]}"""
-
-# LLM ชอบห่อ JSON ด้วย ```json ... ``` แม้จะสั่งว่าห้าม — ลอกออกก่อน parse
-FENCE = re.compile(r"\A\s*```(?:json)?\s*(.*?)\s*```\s*\Z", re.S)
-
-
-class ExtractorError(RuntimeError):
-    """ตัวสกัดทำงานไม่สำเร็จ — คนละเรื่องกับ "อ่านแล้วไม่เจอทักษะ"
-
-    🔒 ห้ามกลืนเป็น "ไม่เจอทักษะ" เด็ดขาด เพราะผู้ใช้จะเห็นผลว่าง แล้วเข้าใจว่า
-       ผลงานตัวเองไม่มีอะไรเลย ทั้งที่จริงคือระบบเรียก LLM ไม่สำเร็จ
-       (กติกาข้อ 5 — ระบบต้องรายงานตามจริง)
-    """
-
 
 def _first_text_block(message) -> str:
     """ดึงข้อความจากคำตอบ — content เป็นลิสต์ของ block ที่อาจไม่ใช่ text ทั้งหมด"""
@@ -67,54 +42,6 @@ def _first_text_block(message) -> str:
         if isinstance(text, str) and text.strip():
             return text
     raise ExtractorError("LLM ตอบกลับมาโดยไม่มีข้อความ")
-
-
-def parse_payload(text: str, raw_text: str, known_skills: set[str]) -> list[ExtractedSpan]:
-    """แปลงคำตอบ LLM เป็น span ที่ผ่าน guard แล้ว — ฟังก์ชันบริสุทธิ์ เทสต์ได้โดยไม่ต้องมี key
-
-    แถวที่ผิดรูปแบบจะถูกข้ามทีละแถว ไม่ทำให้ทั้งเอกสารพัง —
-    LLM พลาดบางข้อเป็นเรื่องปกติ แต่ทิ้งผลทั้งชุดเพราะข้อเดียวไม่ใช่
-    """
-    if fenced := FENCE.match(text):
-        text = fenced.group(1)
-
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ExtractorError(f"LLM ตอบกลับมาไม่ใช่ JSON ที่อ่านได้: {exc}") from exc
-
-    if not isinstance(payload, dict):
-        raise ExtractorError("LLM ตอบกลับมาไม่ใช่ object ที่มีคีย์ skills")
-
-    spans: list[ExtractedSpan] = []
-    for row in payload.get("skills") or []:
-        if not isinstance(row, dict):
-            continue
-        skill_id = row.get("skill_id")
-        span_text = row.get("span_text")
-        if not isinstance(skill_id, str) or not isinstance(span_text, str) or not span_text:
-            continue
-        if skill_id not in known_skills:
-            continue                       # อ้างทักษะนอกคลัง 73 ตัว → ทิ้ง
-
-        start = raw_text.find(span_text)   # LLM ไม่ต้องนับตำแหน่งเอง เราหาให้
-        if start < 0:
-            continue                       # แต่งข้อความที่ไม่มีในเอกสาร → ทิ้ง
-
-        try:
-            level = max(1, min(settings.max_level, int(row.get("level", 1))))
-            confidence = float(row.get("confidence", 0.5))
-        except (TypeError, ValueError):
-            continue                       # ระดับหรือความมั่นใจไม่ใช่ตัวเลข → ทิ้งแถวนี้
-
-        spans.append(ExtractedSpan(
-            skill_id=skill_id,
-            span_start=start, span_end=start + len(span_text), span_text=span_text,
-            level=level, confidence=max(0.0, min(1.0, confidence)),
-        ))
-
-    # 🛡 ด่านสุดท้าย — ต่อให้ทุกอย่างข้างบนพลาด ข้อความที่ชี้ไม่ได้จะไม่รอดออกไป
-    return enforce_span_guard(spans, raw_text)
 
 
 class AnthropicExtractor:

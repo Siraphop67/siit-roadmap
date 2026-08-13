@@ -16,4 +16,9 @@ def get_extractor() -> SkillExtractor:
     if provider == "anthropic":
         from app.llm.anthropic import AnthropicExtractor
         return AnthropicExtractor()
-    raise ValueError(f"ไม่รู้จัก LLM_PROVIDER={settings.llm_provider!r} (ใช้ keyword หรือ anthropic)")
+    if provider == "local":
+        from app.llm.local import LocalExtractor
+        return LocalExtractor()
+    raise ValueError(
+        f"ไม่รู้จัก LLM_PROVIDER={settings.llm_provider!r} — ใช้ keyword · local · anthropic"
+    )

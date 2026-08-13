@@ -1,7 +1,7 @@
 """ค่าตั้งของระบบ
 
 DATABASE_URL — ไม่ตั้ง = SQLite ในไฟล์ (รันได้ทันที) · ตั้ง postgresql+psycopg://... = Postgres
-LLM_PROVIDER — mock (ค่าเริ่มต้น) | anthropic
+LLM_PROVIDER — keyword (ค่าเริ่มต้น) | local | anthropic
                🔴 ยังไม่มี API key จึงใช้ mock · สลับได้โดยไม่แตะ logic ที่ไหน
 """
 
@@ -29,6 +29,16 @@ class Settings:
     llm_provider: str = os.getenv("LLM_PROVIDER", "keyword")
     anthropic_api_key: str | None = os.getenv("ANTHROPIC_API_KEY")
     llm_model: str = os.getenv("LLM_MODEL", "claude-sonnet-5")
+
+    # ── LLM ที่รันบนเครื่องตัวเอง (LLM_PROVIDER=local) ──
+    # คุยผ่าน OpenAI-compatible chat completions — Ollama · LM Studio · llama.cpp · vLLM
+    local_llm_base_url: str = os.getenv("LOCAL_LLM_BASE_URL", "http://localhost:11434/v1")
+    # 🔴 gemma4:26b เพราะวัดแล้วว่าไม่ตีความเกินหลักฐาน — 12 ทักษะจาก 12 ประโยคคนละประโยค
+    #    qwen2.5:14b ได้ 19 ทักษะจาก 10 ประโยค (1.9 ต่อประโยค) = เอาประโยคเดียวไปอ้างซ้ำ
+    #    เวลาเท่ากันทั้งคู่ (~78 วินาที) · ผลวัดเต็มอยู่ใน docs/DECISIONS.md D13
+    local_llm_model: str = os.getenv("LOCAL_LLM_MODEL", "gemma4:26b")
+    # เซิร์ฟเวอร์บางตัวไม่รองรับ JSON mode แล้วจะปฏิเสธทั้งคำขอ — ปิดได้ด้วย =0
+    local_llm_json_mode: bool = os.getenv("LOCAL_LLM_JSON_MODE", "1") not in {"0", "false", ""}
 
     # ── ที่อยู่ของข้อมูลที่ท่อสร้างไว้ ──
     pipeline_out: Path = REPO_DIR / "pipeline" / "out"

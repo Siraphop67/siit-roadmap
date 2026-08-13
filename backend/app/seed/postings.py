@@ -113,11 +113,19 @@ def parse(path: Path, target_ids: set[str] | None = None) -> Posting:
     return p
 
 
-def validate(p: Posting, target_ids: set[str] | None = None) -> Posting:
+def validate(
+    p: Posting,
+    target_ids: set[str] | None = None,
+    audience: str = "file",
+) -> Posting:
     """กติกาเดียวกันทั้งไฟล์ที่ 🅴 เก็บ และฟอร์มที่บริษัทกรอกเอง
 
     แยกออกมาเพราะประกาศงานเข้าระบบได้สองทาง แต่ต้องผ่านด่านเดียวกัน
     ถ้าฝั่งฟอร์มหลวมกว่า มันจะกลายเป็นประตูหลังทันที
+
+    `audience` เปลี่ยนแค่ *ถ้อยคำ* ไม่ได้เปลี่ยนกติกา — คนอ่านคนละกลุ่มกัน
+      "file" ทีมเก็บเอง รู้ว่า repo เป็น public
+      "form" บริษัทกรอกเอง ไม่รู้จัก repo และประกาศของเขาไม่ได้เข้า repo ด้วยซ้ำ
     """
     meta, errors = p.meta, p.errors
 
@@ -173,23 +181,31 @@ def validate(p: Posting, target_ids: set[str] | None = None) -> Posting:
         errors.append("ยังไม่ได้ลบข้อความของแม่แบบออก")
 
     # ── 🔴 ข้อมูลส่วนบุคคล ──
+    why = (
+        "ข้อมูลติดต่อต้องไม่อยู่ในตัวประกาศ — ใส่ในช่องอีเมลติดต่อแทน"
+        if audience == "form"
+        else "repo เป็น public ต้องลบออกก่อน"
+    )
     if hits := EMAIL.findall(p.body):
-        errors.append(
-            f"เจออีเมลในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — repo เป็น public ต้องลบออกก่อน"
-        )
+        errors.append(f"เจออีเมลในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — {why}")
     if hits := PHONE.findall(p.body):
-        errors.append(
-            f"เจอเบอร์โทรในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — repo เป็น public ต้องลบออกก่อน"
-        )
+        errors.append(f"เจอเบอร์โทรในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — {why}")
 
     # ── เตือน ไม่ใช่ error ──
+    # ชื่อช่องต้องเป็นภาษาที่คนอ่านใช้จริง — บริษัทที่กรอกฟอร์มไม่รู้จัก `target_id`
+    # เขาเห็นแค่ป้ายบนหน้าจอ ส่วนทีมที่แก้ไฟล์เห็นชื่อช่องใน YAML
+    labels = {
+        "target_id": "อาชีพที่ตรงที่สุด" if audience == "form" else "`target_id`",
+        "salary_text": "เงินเดือน" if audience == "form" else "`salary_text`",
+        "closes_at": "ปิดรับสมัคร" if audience == "form" else "`closes_at`",
+    }
     for key, why in (
         ("target_id", "ระบบจะยังไม่รู้ว่าประกาศนี้นับให้อาชีพไหน"),
         ("salary_text", "อ่านย้อนจากข้อความได้ แต่ตอนนี้เร็วกว่า"),
         ("closes_at", "ไม่มีวันปิดรับ จะซ่อนงานที่หมดอายุไม่ได้"),
     ):
         if meta.get(key) in (None, "", []):
-            p.warnings.append(f"ไม่ได้ใส่ `{key}` — {why}")
+            p.warnings.append(f"ไม่ได้ใส่ {labels[key]} — {why}")
 
     return p
 

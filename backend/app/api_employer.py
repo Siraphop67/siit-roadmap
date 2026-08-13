@@ -117,7 +117,7 @@ def submit_posting(body: PostingSubmission, db: Session = Depends(get_db)) -> di
     meta = {k: v for k, v in meta.items() if v is not None}
 
     p = Posting(id="", path=None, meta=meta, body=body.raw_text.strip())  # type: ignore[arg-type]
-    validate(p, target_ids)
+    validate(p, target_ids, audience="form")
 
     if body.contact_email and not EMAIL_RE.match(body.contact_email):
         p.errors.append("`contact_email` ไม่ใช่รูปแบบอีเมล")

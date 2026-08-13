@@ -12,15 +12,18 @@
 |---|---|
 | `make prod` — รันโหมด production บนเครื่อง | 🟢 **รันจริงแล้ว** standalone server ตอบ HTTP 200 |
 | backend อ่าน `CORS_ORIGINS` จาก env | 🟢 **ทดสอบแล้ว** origin ที่ตั้งไว้ผ่าน origin อื่นถูกปฏิเสธ |
-| `Dockerfile.backend` · `Dockerfile.frontend` · `docker-compose.yml` | 🟡 **เขียนแล้ว แต่ยังไม่มีใครสั่ง build บนเครื่องจริง** |
+| `Dockerfile.backend` · `Dockerfile.frontend` | 🟢 **CI build แล้วรันจริง** ทั้งสอง image ตอบ `/health` ถูกต้อง |
+| `docker-compose.yml` (มี Postgres) | 🟡 **ยังไม่มีใครสั่ง `docker compose up` จริง** — image สองตัวในนั้นผ่านแล้ว แต่การต่อกับ Postgres ยังไม่ได้ลอง |
 | ที่ deploy จริงบนคลาวด์ | 🔴 **ยังไม่มี** ต้องมีบัญชีก่อน ดูหัวข้อสุดท้าย |
 
-**ทำไม Docker ยังเป็น 🟡** — เครื่องที่เขียนไฟล์พวกนี้ไม่มี Docker ติดตั้ง จึงสั่ง build
-ทดสอบเองไม่ได้ · เพื่อไม่ให้ซ้ำรอย `prototype/docker-compose.yml` ที่เขียนไว้แล้วไม่เคยรัน
-งาน `docker` ใน [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) จึง build ทั้งสอง image
-**แล้วรันจริงและ curl เข้าไปดูว่ามันตอบ** ทุกครั้งที่มี PR
+**ใครเป็นคนพิสูจน์ Docker** — ไม่ใช่คนเขียนไฟล์ เพราะเครื่องนั้นไม่มี Docker ติดตั้ง
+เพื่อไม่ให้ซ้ำรอย `prototype/docker-compose.yml` ที่เขียนไว้แล้วไม่เคยรัน งาน `docker` ใน
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) จึง build ทั้งสอง image
+`docker run` แล้ว curl เข้าไปดูว่ามันตอบ — **ทุกครั้งที่มี PR**
 
-👉 **เปิด PR แล้วดูผลงาน `docker` — ถ้าเขียว แปลว่า Dockerfile ใช้ได้จริง ไม่ใช่แค่หน้าตาถูก**
+ผลรันจริง: `{"ok":true,"skills":73,"skill_edges":105,"career_targets":8,"extractor_is_real_llm":false}`
+
+👉 งาน `docker` แดงเมื่อไหร่ = Dockerfile พัง อย่า deploy
 
 ---
 

@@ -344,6 +344,96 @@ export type DiscoverResult = {
   next_step: string;
 };
 
+// ══════════════ ฝั่งบริษัทลงประกาศรับสมัคร ══════════════
+//
+// 🔒 ทางเดียว — ไม่มีอะไรในส่วนนี้คืนข้อมูลนักศึกษาให้บริษัท และจะไม่มี
+//    บริษัทลงประกาศได้ · นักศึกษาเห็นประกาศแล้วไปสมัครที่ url หรืออีเมลของบริษัทเอง
+
+export type EmploymentType = "new_grad" | "internship" | "coop" | "experienced";
+export type PostingStatus = "pending" | "approved" | "rejected";
+
+export type EmployerMeta = {
+  sectors: Record<string, string>;
+  employment_types: Record<EmploymentType, string>;
+  targets: { id: string; title_th: string }[];
+  /** 🔴 เอาขึ้นหน้าฟอร์ม — บริษัทต้องรู้ก่อนกรอกว่าต้องผ่านการตรวจ และจะไม่เห็นข้อมูลนักศึกษา */
+  notes: { review: string; privacy: string; raw_text: string };
+};
+
+export type PostingSubmission = {
+  org: string;
+  title: string;
+  url: string;
+  sector: string;
+  employment_type: EmploymentType;
+  /** ข้อความประกาศตามต้นฉบับ · 🔴 ห้ามมีอีเมลหรือเบอร์โทรในนี้ ใส่ที่ contact_email แทน */
+  raw_text: string;
+  submitted_by: string;
+  target_id?: string | null;
+  location?: string | null;
+  salary_text?: string | null;
+  posted_at?: string | null;
+  closes_at?: string | null;
+  requires_field?: string[] | null;
+  requires_gpa?: number | null;
+  requires_education?: string | null;
+  note?: string | null;
+  contact_email?: string | null;
+};
+
+export type SubmissionResult = {
+  posting_id: string;
+  /** 🔒 เป็น "pending" เสมอ — ไม่มีทางลัดให้ขึ้นจอทันที */
+  status: "pending";
+  warnings: string[];
+  message: string;
+  check_status_at: string;
+};
+
+export type PostingStatusView = {
+  posting_id: string;
+  org: string;
+  title: string;
+  status: PostingStatus;
+  status_th: string;
+  submitted_at: string;
+  reviewed_at: string | null;
+  review_note: string | null;
+};
+
+export type ReviewRow = {
+  posting_id: string;
+  org: string;
+  title: string;
+  url: string | null;
+  target_id: string | null;
+  submitted_by: string | null;
+  submitted_at: string;
+  contact_email: string | null;
+  raw_text: string;
+  char_count: number;
+};
+
+export type ReviewQueue = {
+  status: PostingStatus;
+  count: number;
+  postings: ReviewRow[];
+  /** รายการที่คนตรวจต้องไล่ดู — แสดงคู่กับประกาศ อย่าให้กดอนุมัติรัว ๆ ได้ */
+  checklist: string[];
+};
+
+/** ข้อผิดพลาดจากฟอร์มบริษัท — API ส่งกลับมาทุกข้อพร้อมกัน คนกรอกจะได้แก้รอบเดียว */
+export type SubmissionErrors = { errors: string[]; warnings: string[] };
+
+/** แกะรายการข้อผิดพลาดออกจาก ApiError ของฟอร์มบริษัท · ไม่ใช่รูปแบบนี้จะได้ null */
+export function submissionErrors(e: unknown): SubmissionErrors | null {
+  if (!(e instanceof ApiError)) return null;
+  const d = e.detail as SubmissionErrors | undefined;
+  return d && Array.isArray(d.errors)
+    ? { errors: d.errors, warnings: d.warnings ?? [] }
+    : null;
+}
+
 // ══════════════════════ ข้อมูลของฉัน ══════════════════════
 
 export type SkillLine = { skill_id: string; name_th: string; level: number };
@@ -369,25 +459,44 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /**
+     * body ที่ API ส่งมาดิบ ๆ — บาง endpoint ส่งรายการข้อผิดพลาดมาเป็นก้อน
+     * (ฟอร์มบริษัทส่งกลับทุกข้อพร้อมกัน) ซึ่งถ้าย่อเป็นข้อความเดียวแล้วข้อมูลหาย
+     * ใช้ `submissionErrors(e)` แกะออกมา อย่าไปแกะ message เอง
+     */
+    readonly detail?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
-async function readError(res: Response): Promise<string> {
+async function readError(res: Response): Promise<{ message: string; detail?: unknown }> {
   try {
     const body = await res.json();
     const detail = body?.detail;
-    if (typeof detail === "string") return detail;
-    // FastAPI ส่ง array เมื่อ validation ไม่ผ่าน — ผู้ใช้ไม่ได้อยากอ่าน JSON
-    if (Array.isArray(detail)) return "ข้อมูลที่ส่งไปยังไม่ครบหรือผิดรูปแบบ";
+    if (typeof detail === "string") return { message: detail, detail };
+    // FastAPI ส่ง array เมื่อ validation ของ pydantic ไม่ผ่าน — ผู้ใช้ไม่ได้อยากอ่าน JSON
+    if (Array.isArray(detail)) {
+      return { message: "ข้อมูลที่ส่งไปยังไม่ครบหรือผิดรูปแบบ", detail };
+    }
+    // ก้อนที่เราส่งเอง เช่น {errors: [...], warnings: [...]} จากฟอร์มบริษัท
+    if (detail && typeof detail === "object") {
+      const errors = (detail as { errors?: unknown }).errors;
+      return {
+        message:
+          Array.isArray(errors) && errors.length
+            ? String(errors[0])
+            : "ข้อมูลที่กรอกยังไม่ผ่านการตรวจ",
+        detail,
+      };
+    }
   } catch {
     /* body ไม่ใช่ JSON — ตกไปใช้ข้อความตามรหัสสถานะ */
   }
-  if (res.status === 404) return "ไม่พบข้อมูลที่ขอ";
-  if (res.status >= 500) return "ระบบฝั่งเซิร์ฟเวอร์มีปัญหา ลองใหม่อีกครั้ง";
-  return `เรียก API ไม่สำเร็จ (${res.status})`;
+  if (res.status === 404) return { message: "ไม่พบข้อมูลที่ขอ" };
+  if (res.status >= 500) return { message: "ระบบฝั่งเซิร์ฟเวอร์มีปัญหา ลองใหม่อีกครั้ง" };
+  return { message: `เรียก API ไม่สำเร็จ (${res.status})` };
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -398,7 +507,10 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     // แยกกรณี "ยิงไม่ถึง" ออกจาก "ยิงถึงแล้วตอบ error" — เจอบ่อยตอนลืมเปิด backend
     throw new ApiError(`ต่อกับ API ไม่ได้ที่ ${BASE} — เปิด backend แล้วหรือยัง (make backend)`, 0);
   }
-  if (!res.ok) throw new ApiError(await readError(res), res.status);
+  if (!res.ok) {
+    const { message, detail } = await readError(res);
+    throw new ApiError(message, res.status, detail);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -494,6 +606,42 @@ export const api = {
   /** ล้างคำตอบแบบทดสอบ — ไม่แตะ CV ทักษะที่ยืนยันแล้ว หรือโปรไฟล์ */
   discoverReset: (userId: string) =>
     json<{ cleared: number }>("/discover/reset", "POST", { user_id: userId }),
+
+  // ── ฝั่งบริษัทลงประกาศ ──
+  /** ตัวเลือกสำหรับหน้าฟอร์ม — ดึงจากที่เดียวกับที่ระบบตรวจ จะได้ไม่หลุดจากกัน */
+  employerMeta: () => call<EmployerMeta>("/employer/meta"),
+
+  /**
+   * ส่งประกาศเข้าคิว — 🔒 ได้ `status: "pending"` เสมอ ไม่มีทางลัดให้ขึ้นจอทันที
+   * กรอกไม่ผ่านจะโยน ApiError 422 · ใช้ `submissionErrors(e)` แกะรายการข้อผิดพลาดออกมา
+   * API ส่งกลับมาทุกข้อพร้อมกัน หน้าจอควรแสดงทั้งหมด ไม่ใช่ทีละข้อ
+   */
+  submitPosting: (body: PostingSubmission) =>
+    json<SubmissionResult>("/employer/posting", "POST", body),
+
+  /** บริษัทเช็คสถานะประกาศของตัวเอง — posting_id ที่ได้ตอนส่งคือกุญแจ */
+  postingStatus: (postingId: string) =>
+    call<PostingStatusView>(`/employer/posting/${encodeURIComponent(postingId)}`),
+
+  /** คิวรออนุมัติ — ต้องมี token · ไม่ได้ตั้ง EMPLOYER_REVIEW_TOKEN ใน .env จะได้ 503 */
+  reviewQueue: (token: string, status: PostingStatus = "pending") =>
+    call<ReviewQueue>(`/employer/review${q({ status })}`, {
+      headers: { "X-Review-Token": token },
+    }),
+
+  reviewPosting: (
+    token: string,
+    postingId: string,
+    body: { decision: "approved" | "rejected"; note?: string },
+  ) =>
+    call<{ posting_id: string; status: PostingStatus; next_step: string }>(
+      `/employer/review/${encodeURIComponent(postingId)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Review-Token": token },
+        body: JSON.stringify(body),
+      },
+    ),
 
   // ── เป้าหมาย + roadmap ──
   setGoal: (body: { user_id: string; target_id: string }) =>

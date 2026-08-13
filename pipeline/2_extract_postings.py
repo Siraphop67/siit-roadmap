@@ -155,13 +155,47 @@ def aggregate(usable, extractor, min_postings: int, broken: int = 0) -> dict:
     }
 
 
+def _approved_employer_postings() -> list:
+    """ประกาศจากฟอร์มบริษัทที่ผ่านการอนุมัติแล้ว — อยู่ในฐานข้อมูล ไม่ใช่ในไฟล์
+
+    ฐานข้อมูลอาจยังไม่มี (เครื่องที่ยังไม่เคยรัน backend) — กรณีนั้นถือว่าไม่มีประกาศจากบริษัท
+    ไม่ใช่ข้อผิดพลาด ท่อยังต้องเดินต่อได้ด้วยไฟล์อย่างเดียว
+    """
+    try:
+        from sqlalchemy import select
+
+        from app.db import SessionLocal
+        from app.models import JobPosting
+        from app.seed.postings import from_db_rows
+
+        with SessionLocal() as db:
+            rows = db.scalars(
+                select(JobPosting).where(
+                    JobPosting.source == "employer",
+                    JobPosting.status == "approved",
+                )
+            ).all()
+            return from_db_rows(rows)
+    except Exception as exc:                       # noqa: BLE001
+        print(f"[ท่อ] อ่านประกาศจากบริษัทไม่ได้ ({exc}) — ใช้เฉพาะไฟล์")
+        return []
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--min-postings", type=int, default=DEFAULT_MIN_POSTINGS)
     args = ap.parse_args()
 
-    postings = load_all(target_ids=set(TARGET_TH))
-    usable = [p for p in postings if p.ok]
+    from_files = load_all(target_ids=set(TARGET_TH))
+    usable = [p for p in from_files if p.ok]
+    broken = len(from_files) - len(usable)      # นับจากไฟล์เท่านั้น ต้องคิดก่อนรวมของบริษัท
+
+    # 🔒 ประกาศที่บริษัทส่งเข้ามาเอง นับเฉพาะที่ผ่านการอนุมัติแล้วเท่านั้น
+    #    ถ้านับ pending ด้วย ใครก็ดัน requirement ของอาชีพได้โดยไม่ต้องผ่านใคร
+    from_employers = _approved_employer_postings()
+    if from_employers:
+        print(f"[ท่อ] รวมประกาศจากบริษัทที่อนุมัติแล้ว {len(from_employers)} อัน")
+        usable += from_employers
 
     if not usable:
         print(f"""
@@ -174,8 +208,7 @@ def main() -> int:
 """)
         return 0
 
-    result = aggregate(usable, get_extractor(), args.min_postings,
-                       broken=len(postings) - len(usable))
+    result = aggregate(usable, get_extractor(), args.min_postings, broken=broken)
 
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / "posting_requirements.json"

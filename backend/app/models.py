@@ -200,11 +200,24 @@ class ActivityItem(Base):
 
 
 class JobPosting(Base):
-    """ประกาศงานจริงที่เก็บมาด้วยมือ — ห้ามเขียน scraper (แผน §2 D5)"""
+    """ประกาศงานจริง — เข้าระบบได้ 2 ทาง และต้องแยกให้ออกว่ามาทางไหน
+
+    ① `manual`   ทีมเก็บเองจากประกาศสาธารณะ (data/postings/*.md) — ห้ามเขียน scraper (D11)
+    ② `employer` บริษัทกรอกฟอร์มส่งเข้ามาเอง — คือทางขยายที่ไม่ผิด ToS
+
+    🔴 ทั้งสองทางไม่เท่ากันในแง่ความน่าเชื่อถือ และห้ามทำให้ดูเท่ากัน
+       ① ทีมเห็นประกาศต้นฉบับกับตาตัวเอง
+       ② ใครก็พิมพ์ว่าตัวเองเป็นบริษัทไหนก็ได้ — ระบบนี้ไม่มีการยืนยันตัวตนองค์กร
+       จึงต้องผ่านคิวรออนุมัติก่อนเสมอ และหน้าจอต้องบอกที่มาตามจริง
+
+    🔒 ระบบนี้เป็นทางเดียว — บริษัทส่งประกาศเข้ามาได้ แต่ไม่เห็นข้อมูลนักศึกษาเลย
+       ไม่มี endpoint ไหนคืนรายชื่อ โปรไฟล์ หรือ CV ให้ฝั่งบริษัท และจะไม่มี
+       ถ้าวันหนึ่งจะเพิ่ม ต้องรื้อเรื่องความยินยอมทั้งหมดก่อน ไม่ใช่เพิ่มฟิลด์
+    """
 
     __tablename__ = "job_posting"
 
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
     target_id: Mapped[str | None] = mapped_column(ForeignKey("career_target.id"))
     org: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text)
@@ -212,6 +225,20 @@ class JobPosting(Base):
     collected_at: Mapped[str] = mapped_column(String(32))
     collected_by: Mapped[str | None] = mapped_column(String(64))
     raw_text: Mapped[str] = mapped_column(Text)
+
+    # manual = ทีมเก็บเอง · employer = บริษัทกรอกเอง
+    source: Mapped[str] = mapped_column(String(16), default="manual")
+    # pending = รออนุมัติ · approved = ใช้ได้ · rejected = ไม่ผ่าน
+    # 🔒 เฉพาะ approved เท่านั้นที่ไหลเข้าท่อขั้นที่ 2 และขึ้นหน้าจอ
+    status: Mapped[str] = mapped_column(String(16), default="approved")
+    review_note: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # ช่องทางติดต่อที่บริษัทกรอกเอง — แยกจาก raw_text โดยตั้งใจ
+    # เพราะ raw_text ถูกตรวจว่าห้ามมีอีเมล/เบอร์ (กันข้อมูลติดต่อของคนที่ไม่ได้ยินยอมหลุด)
+    # ส่วนช่องนี้เจ้าของกรอกเองจึงยินยอมโดยการกรอก
+    contact_email: Mapped[str | None] = mapped_column(Text)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
 class PostingExtraction(Base):

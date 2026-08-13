@@ -87,9 +87,12 @@ def test_แปลงเป็นแถวในตารางได้คร�
     row = to_row(parse(good, TARGET_IDS))
     assert set(row) == {
         "id", "target_id", "org", "title", "url",
-        "collected_at", "collected_by", "raw_text",
+        "collected_at", "collected_by", "raw_text", "source", "status",
     }
     assert row["target_id"] == "PROCESS-ENG"
+    # ไฟล์ที่ทีมเก็บเอง = เห็นประกาศต้นฉบับกับตาตัวเองแล้ว ไม่ต้องเข้าคิวรออนุมัติ
+    assert row["source"] == "manual"
+    assert row["status"] == "approved"
 
 
 # ═════════════ กรอกผิดแล้วต้องบอกให้แก้ได้ ═════════════

@@ -60,7 +60,8 @@ FRONTMATTER = re.compile(r"\A---\s*\n(.*?)\n---\s*\n(.*)\Z", re.S)
 @dataclass
 class Posting:
     id: str
-    path: Path
+    # None = ไม่ได้มาจากไฟล์ แต่มาจากฟอร์มที่บริษัทกรอก (app/api_employer.py)
+    path: Path | None
     meta: dict
     body: str
     errors: list[str] = field(default_factory=list)
@@ -108,11 +109,22 @@ def parse(path: Path, target_ids: set[str] | None = None) -> Posting:
 
     p.meta = meta
     p.body = m.group(2).strip()
+    validate(p, target_ids)
+    return p
+
+
+def validate(p: Posting, target_ids: set[str] | None = None) -> Posting:
+    """กติกาเดียวกันทั้งไฟล์ที่ 🅴 เก็บ และฟอร์มที่บริษัทกรอกเอง
+
+    แยกออกมาเพราะประกาศงานเข้าระบบได้สองทาง แต่ต้องผ่านด่านเดียวกัน
+    ถ้าฝั่งฟอร์มหลวมกว่า มันจะกลายเป็นประตูหลังทันที
+    """
+    meta, errors = p.meta, p.errors
 
     # ── ช่องที่ต้องกรอก ──
     for key in REQUIRED:
         if meta.get(key) in (None, "", []):
-            p.errors.append(f"ยังไม่ได้กรอก `{key}`")
+            errors.append(f"ยังไม่ได้กรอก `{key}`")
 
     unknown = set(meta) - set(REQUIRED) - set(OPTIONAL)
     if unknown:
@@ -120,53 +132,53 @@ def parse(path: Path, target_ids: set[str] | None = None) -> Posting:
 
     # ── ค่าที่ต้องอยู่ในชุดที่กำหนด ──
     if (s := meta.get("sector")) and s not in SECTORS:
-        p.errors.append(f"`sector` ต้องเป็นหนึ่งใน {' · '.join(SECTORS)} (เจอ “{s}”)")
+        errors.append(f"`sector` ต้องเป็นหนึ่งใน {' · '.join(SECTORS)} (เจอ “{s}”)")
     if (e := meta.get("employment_type")) and e not in EMPLOYMENT_TYPES:
-        p.errors.append(
+        errors.append(
             f"`employment_type` ต้องเป็นหนึ่งใน {' · '.join(EMPLOYMENT_TYPES)} (เจอ “{e}”)")
 
     if (t := meta.get("target_id")) and target_ids is not None and t not in target_ids:
-        p.errors.append(f"`target_id` “{t}” ไม่มีอยู่ในคลังอาชีพ — ใส่ null ถ้าไม่แน่ใจ")
+        errors.append(f"`target_id` “{t}” ไม่มีอยู่ในคลังอาชีพ — ใส่ null ถ้าไม่แน่ใจ")
 
     known_fields = {f["id"] for f in FIELDS}
     for code in meta.get("requires_field") or []:
         if code not in known_fields:
-            p.errors.append(f"`requires_field` มี “{code}” ที่ไม่ใช่สาขาของ SIIT")
+            errors.append(f"`requires_field` มี “{code}” ที่ไม่ใช่สาขาของ SIIT")
 
     if (g := meta.get("requires_gpa")) is not None:
         if not isinstance(g, (int, float)) or not 0 <= g <= 4:
-            p.errors.append(f"`requires_gpa` ต้องเป็นตัวเลข 0–4 (เจอ “{g}”)")
+            errors.append(f"`requires_gpa` ต้องเป็นตัวเลข 0–4 (เจอ “{g}”)")
 
     # ── วันที่ ──
-    collected = _parse_date(meta.get("collected_at"), "`collected_at`", p.errors)
+    collected = _parse_date(meta.get("collected_at"), "`collected_at`", errors)
     if collected and collected > date.today():
-        p.errors.append("`collected_at` เป็นวันในอนาคต — น่าจะพิมพ์ผิด")
-    posted = _parse_date(meta.get("posted_at"), "`posted_at`", p.errors)
-    closes = _parse_date(meta.get("closes_at"), "`closes_at`", p.errors)
+        errors.append("`collected_at` เป็นวันในอนาคต — น่าจะพิมพ์ผิด")
+    posted = _parse_date(meta.get("posted_at"), "`posted_at`", errors)
+    closes = _parse_date(meta.get("closes_at"), "`closes_at`", errors)
     if posted and closes and closes < posted:
-        p.errors.append("`closes_at` มาก่อน `posted_at`")
+        errors.append("`closes_at` มาก่อน `posted_at`")
 
     if (u := meta.get("url")) and not str(u).startswith(("http://", "https://")):
-        p.errors.append(f"`url` ต้องขึ้นต้นด้วย http:// หรือ https:// (เจอ “{u}”)")
+        errors.append(f"`url` ต้องขึ้นต้นด้วย http:// หรือ https:// (เจอ “{u}”)")
 
     # ── ตัวข้อความ ──
     if not p.body:
-        p.errors.append("ไม่มีข้อความประกาศใต้หัวไฟล์")
+        errors.append("ไม่มีข้อความประกาศใต้หัวไฟล์")
     elif len(p.body) < MIN_BODY_CHARS:
-        p.errors.append(
+        errors.append(
             f"ข้อความประกาศสั้นเกินไป ({len(p.body)} ตัวอักษร ต้องอย่างน้อย {MIN_BODY_CHARS}) "
             "— คัดลอกมาครบหรือยัง ต้องมีทั้งคุณสมบัติผู้สมัครและหน้าที่ความรับผิดชอบ"
         )
     if "วางข้อความประกาศงานทั้งหมดตรงนี้" in p.body:
-        p.errors.append("ยังไม่ได้ลบข้อความของแม่แบบออก")
+        errors.append("ยังไม่ได้ลบข้อความของแม่แบบออก")
 
     # ── 🔴 ข้อมูลส่วนบุคคล ──
     if hits := EMAIL.findall(p.body):
-        p.errors.append(
+        errors.append(
             f"เจออีเมลในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — repo เป็น public ต้องลบออกก่อน"
         )
     if hits := PHONE.findall(p.body):
-        p.errors.append(
+        errors.append(
             f"เจอเบอร์โทรในข้อความ {len(hits)} จุด (เช่น {hits[0]}) — repo เป็น public ต้องลบออกก่อน"
         )
 
@@ -194,6 +206,25 @@ def load_all(directory: Path | None = None, target_ids: set[str] | None = None) 
     ]
 
 
+def from_db_rows(rows) -> list[Posting]:
+    """แปลงแถว JobPosting ที่บริษัทส่งมา ให้หน้าตาเหมือนกับที่อ่านจากไฟล์
+
+    ท่อขั้นที่ 2 จะได้ประมวลผลประกาศจากสองทางด้วยโค้ดชุดเดียวกัน
+    ถ้าไม่มีตัวนี้ ประกาศที่บริษัทส่งเข้ามาจะนอนอยู่ในตารางโดยไม่ถูกนับเลย
+    """
+    return [
+        Posting(
+            id=r.id, path=None, body=r.raw_text,
+            meta={
+                "org": r.org, "title": r.title, "url": r.url,
+                "collected_at": r.collected_at, "collected_by": r.collected_by,
+                "target_id": r.target_id,
+            },
+        )
+        for r in rows
+    ]
+
+
 def to_row(p: Posting) -> dict:
     """แปลงเป็นฟิลด์ของตาราง job_posting"""
     return {
@@ -205,4 +236,8 @@ def to_row(p: Posting) -> dict:
         "collected_at": str(p.meta.get("collected_at", "")),
         "collected_by": p.meta.get("collected_by") or None,
         "raw_text": p.body,          # 🔒 ตามที่วางมา — span จะชี้กลับมาที่ค่านี้
+        # ไฟล์ = ทีมเห็นประกาศต้นฉบับกับตาตัวเองแล้ว จึงไม่ต้องเข้าคิวรออนุมัติ
+        # ต่างจากฟอร์มที่บริษัทกรอกเอง ซึ่งไม่มีใครยืนยันตัวตนได้ (ดู app/api_employer.py)
+        "source": "manual",
+        "status": "approved",
     }

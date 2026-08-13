@@ -195,6 +195,11 @@ def seed(db: Session) -> dict[str, int]:
     for p in good:
         if tid := p.meta.get("target_id"):
             counted[tid] = counted.get(tid, 0) + 1
+    # 🔒 นับประกาศจากฟอร์มบริษัทเฉพาะที่อนุมัติแล้ว — ที่รอคิวยังไม่นับ
+    for row in db.scalars(select(JobPosting).where(
+            JobPosting.source == "employer", JobPosting.status == "approved")).all():
+        if row.target_id:
+            counted[row.target_id] = counted.get(row.target_id, 0) + 1
     for t in CAREER_TARGETS:
         row = db.get(CareerTarget, t["id"])
         if not row:

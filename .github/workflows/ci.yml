@@ -62,6 +62,12 @@ jobs:
       - run: npm ci
         working-directory: frontend
 
+      # 🔴 ต้อง typegen ก่อน tsc — Next 16 สร้าง type ของ route/layout (เช่น LayoutProps)
+      #    ลงใน .next/types ตอน build · clone ใหม่ยังไม่มีโฟลเดอร์นั้น tsc จึงพังทันที
+      #    บนเครื่องคนพัฒนามองไม่เห็นปัญหานี้ เพราะเคย build ไปแล้ว
+      - run: npx next typegen
+        working-directory: frontend
+
       # lib/api.ts เป็นสัญญาที่อีกสามคนต่ออยู่ — type พังคือทุกหน้าพัง
       - run: npx tsc --noEmit
         working-directory: frontend

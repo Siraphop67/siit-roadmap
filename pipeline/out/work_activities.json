@@ -1,0 +1,412 @@
+[
+  {
+    "id": "4.A.1.a.1",
+    "name_en": "Getting Information",
+    "name_th": null,
+    "description_en": "Observing, receiving, and otherwise obtaining information from all relevant sources.",
+    "group_id": "4.A.1",
+    "group_en": "Information Input",
+    "subgroup_id": "4.A.1.a",
+    "subgroup_en": "Looking for and Receiving Job-Related Information"
+  },
+  {
+    "id": "4.A.1.a.2",
+    "name_en": "Monitoring Processes, Materials, or Surroundings",
+    "name_th": null,
+    "description_en": "Monitoring and reviewing information from materials, events, or the environment, to detect or assess problems.",
+    "group_id": "4.A.1",
+    "group_en": "Information Input",
+    "subgroup_id": "4.A.1.a",
+    "subgroup_en": "Looking for and Receiving Job-Related Information"
+  },
+  {
+    "id": "4.A.1.b.1",
+    "name_en": "Identifying Objects, Actions, and Events",
+    "name_th": null,
+    "description_en": "Identifying information by categorizing, estimating, recognizing differences or similarities, and detecting changes in circumstances or events.",
+    "group_id": "4.A.1",
+    "group_en": "Information Input",
+    "subgroup_id": "4.A.1.b",
+    "subgroup_en": "Identifying and Evaluating Job-Relevant Information"
+  },
+  {
+    "id": "4.A.1.b.2",
+    "name_en": "Inspecting Equipment, Structures, or Materials",
+    "name_th": null,
+    "description_en": "Inspecting equipment, structures, or materials to identify the cause of errors or other problems or defects.",
+    "group_id": "4.A.1",
+    "group_en": "Information Input",
+    "subgroup_id": "4.A.1.b",
+    "subgroup_en": "Identifying and Evaluating Job-Relevant Information"
+  },
+  {
+    "id": "4.A.1.b.3",
+    "name_en": "Estimating the Quantifiable Characteristics of Products, Events, or Information",
+    "name_th": null,
+    "description_en": "Estimating sizes, distances, and quantities; or determining time, costs, resources, or materials needed to perform a work activity.",
+    "group_id": "4.A.1",
+    "group_en": "Information Input",
+    "subgroup_id": "4.A.1.b",
+    "subgroup_en": "Identifying and Evaluating Job-Relevant Information"
+  },
+  {
+    "id": "4.A.2.a.1",
+    "name_en": "Judging the Qualities of Objects, Services, or People",
+    "name_th": null,
+    "description_en": "Assessing the value, importance, or quality of things or people.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.a",
+    "subgroup_en": "Information and Data Processing"
+  },
+  {
+    "id": "4.A.2.a.2",
+    "name_en": "Processing Information",
+    "name_th": null,
+    "description_en": "Compiling, coding, categorizing, calculating, tabulating, auditing, or verifying information or data.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.a",
+    "subgroup_en": "Information and Data Processing"
+  },
+  {
+    "id": "4.A.2.a.3",
+    "name_en": "Evaluating Information to Determine Compliance with Standards",
+    "name_th": null,
+    "description_en": "Using relevant information and individual judgment to determine whether events or processes comply with laws, regulations, or standards.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.a",
+    "subgroup_en": "Information and Data Processing"
+  },
+  {
+    "id": "4.A.2.a.4",
+    "name_en": "Analyzing Data or Information",
+    "name_th": null,
+    "description_en": "Identifying the underlying principles, reasons, or facts of information by breaking down information or data into separate parts.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.a",
+    "subgroup_en": "Information and Data Processing"
+  },
+  {
+    "id": "4.A.2.b.1",
+    "name_en": "Making Decisions and Solving Problems",
+    "name_th": null,
+    "description_en": "Analyzing information and evaluating results to choose the best solution and solve problems.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.2.b.2",
+    "name_en": "Thinking Creatively",
+    "name_th": null,
+    "description_en": "Developing, designing, or creating new applications, ideas, relationships, systems, or products, including artistic contributions.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.2.b.3",
+    "name_en": "Updating and Using Relevant Knowledge",
+    "name_th": null,
+    "description_en": "Keeping up-to-date technically and applying new knowledge to your job.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.2.b.4",
+    "name_en": "Developing Objectives and Strategies",
+    "name_th": null,
+    "description_en": "Establishing long-range objectives and specifying the strategies and actions to achieve them.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.2.b.5",
+    "name_en": "Scheduling Work and Activities",
+    "name_th": null,
+    "description_en": "Scheduling events, programs, and activities, as well as the work of others.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.2.b.6",
+    "name_en": "Organizing, Planning, and Prioritizing Work",
+    "name_th": null,
+    "description_en": "Developing specific goals and plans to prioritize, organize, and accomplish your work.",
+    "group_id": "4.A.2",
+    "group_en": "Mental Processes",
+    "subgroup_id": "4.A.2.b",
+    "subgroup_en": "Reasoning and Decision Making"
+  },
+  {
+    "id": "4.A.3.a.1",
+    "name_en": "Performing General Physical Activities",
+    "name_th": null,
+    "description_en": "Performing physical activities that require considerable use of your arms and legs and moving your whole body, such as climbing, lifting, balancing, walking, stooping, and handling materials.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.a",
+    "subgroup_en": "Performing Physical and Manual Work Activities"
+  },
+  {
+    "id": "4.A.3.a.2",
+    "name_en": "Handling and Moving Objects",
+    "name_th": null,
+    "description_en": "Using hands and arms in handling, installing, positioning, and moving materials, and manipulating things.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.a",
+    "subgroup_en": "Performing Physical and Manual Work Activities"
+  },
+  {
+    "id": "4.A.3.a.3",
+    "name_en": "Controlling Machines and Processes",
+    "name_th": null,
+    "description_en": "Using either control mechanisms or direct physical activity to operate machines or processes (not including computers or vehicles).",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.a",
+    "subgroup_en": "Performing Physical and Manual Work Activities"
+  },
+  {
+    "id": "4.A.3.a.4",
+    "name_en": "Operating Vehicles, Mechanized Devices, or Equipment",
+    "name_th": null,
+    "description_en": "Running, maneuvering, navigating, or driving vehicles or mechanized equipment, such as forklifts, passenger vehicles, aircraft, or watercraft.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.a",
+    "subgroup_en": "Performing Physical and Manual Work Activities"
+  },
+  {
+    "id": "4.A.3.b.1",
+    "name_en": "Working with Computers",
+    "name_th": null,
+    "description_en": "Using computers and computer systems (including hardware and software) to program, write software, set up functions, enter data, or process information.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.b",
+    "subgroup_en": "Performing Complex and Technical Activities"
+  },
+  {
+    "id": "4.A.3.b.2",
+    "name_en": "Drafting, Laying Out, and Specifying Technical Devices, Parts, and Equipment",
+    "name_th": null,
+    "description_en": "Providing documentation, detailed instructions, drawings, or specifications to tell others about how devices, parts, equipment, or structures are to be fabricated, constructed, assembled, modified, maintained, or used.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.b",
+    "subgroup_en": "Performing Complex and Technical Activities"
+  },
+  {
+    "id": "4.A.3.b.4",
+    "name_en": "Repairing and Maintaining Mechanical Equipment",
+    "name_th": null,
+    "description_en": "Servicing, repairing, adjusting, and testing machines, devices, moving parts, and equipment that operate primarily on the basis of mechanical (not electronic) principles.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.b",
+    "subgroup_en": "Performing Complex and Technical Activities"
+  },
+  {
+    "id": "4.A.3.b.5",
+    "name_en": "Repairing and Maintaining Electronic Equipment",
+    "name_th": null,
+    "description_en": "Servicing, repairing, calibrating, regulating, fine-tuning, or testing machines, devices, and equipment that operate primarily on the basis of electrical or electronic (not mechanical) principles.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.b",
+    "subgroup_en": "Performing Complex and Technical Activities"
+  },
+  {
+    "id": "4.A.3.b.6",
+    "name_en": "Documenting/Recording Information",
+    "name_th": null,
+    "description_en": "Entering, transcribing, recording, storing, or maintaining information in written or electronic/magnetic form.",
+    "group_id": "4.A.3",
+    "group_en": "Work Output",
+    "subgroup_id": "4.A.3.b",
+    "subgroup_en": "Performing Complex and Technical Activities"
+  },
+  {
+    "id": "4.A.4.a.1",
+    "name_en": "Interpreting the Meaning of Information for Others",
+    "name_th": null,
+    "description_en": "Translating or explaining what information means and how it can be used.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.2",
+    "name_en": "Communicating with Supervisors, Peers, or Subordinates",
+    "name_th": null,
+    "description_en": "Providing information to supervisors, co-workers, and subordinates by telephone, in written form, e-mail, or in person.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.3",
+    "name_en": "Communicating with People Outside the Organization",
+    "name_th": null,
+    "description_en": "Communicating with people outside the organization, representing the organization to customers, the public, government, and other external sources. This information can be exchanged in person, in writing, or by telephone or e-mail.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.4",
+    "name_en": "Establishing and Maintaining Interpersonal Relationships",
+    "name_th": null,
+    "description_en": "Developing constructive and cooperative working relationships with others, and maintaining them over time.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.5",
+    "name_en": "Assisting and Caring for Others",
+    "name_th": null,
+    "description_en": "Providing personal assistance, medical attention, emotional support, or other personal care to others such as coworkers, customers, or patients.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.6",
+    "name_en": "Selling or Influencing Others",
+    "name_th": null,
+    "description_en": "Convincing others to buy merchandise/goods or to otherwise change their minds or actions.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.7",
+    "name_en": "Resolving Conflicts and Negotiating with Others",
+    "name_th": null,
+    "description_en": "Handling complaints, settling disputes, and resolving grievances and conflicts, or otherwise negotiating with others.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.a.8",
+    "name_en": "Performing for or Working Directly with the Public",
+    "name_th": null,
+    "description_en": "Performing for people or dealing directly with the public. This includes serving customers in restaurants and stores, and receiving clients or guests.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.a",
+    "subgroup_en": "Communicating and Interacting"
+  },
+  {
+    "id": "4.A.4.b.1",
+    "name_en": "Coordinating the Work and Activities of Others",
+    "name_th": null,
+    "description_en": "Getting members of a group to work together to accomplish tasks.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.b.2",
+    "name_en": "Developing and Building Teams",
+    "name_th": null,
+    "description_en": "Encouraging and building mutual trust, respect, and cooperation among team members.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.b.3",
+    "name_en": "Training and Teaching Others",
+    "name_th": null,
+    "description_en": "Identifying the educational needs of others, developing formal educational or training programs or classes, and teaching or instructing others.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.b.4",
+    "name_en": "Guiding, Directing, and Motivating Subordinates",
+    "name_th": null,
+    "description_en": "Providing guidance and direction to subordinates, including setting performance standards and monitoring performance.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.b.5",
+    "name_en": "Coaching and Developing Others",
+    "name_th": null,
+    "description_en": "Identifying the developmental needs of others and coaching, mentoring, or otherwise helping others to improve their knowledge or skills.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.b.6",
+    "name_en": "Providing Consultation and Advice to Others",
+    "name_th": null,
+    "description_en": "Providing guidance and expert advice to management or other groups on technical, systems-, or process-related topics.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.b",
+    "subgroup_en": "Coordinating, Developing, Managing, and Advising"
+  },
+  {
+    "id": "4.A.4.c.1",
+    "name_en": "Performing Administrative Activities",
+    "name_th": null,
+    "description_en": "Performing day-to-day administrative tasks such as maintaining information files and processing paperwork.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.c",
+    "subgroup_en": "Administering"
+  },
+  {
+    "id": "4.A.4.c.2",
+    "name_en": "Staffing Organizational Units",
+    "name_th": null,
+    "description_en": "Recruiting, interviewing, selecting, hiring, and promoting employees in an organization.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.c",
+    "subgroup_en": "Administering"
+  },
+  {
+    "id": "4.A.4.c.3",
+    "name_en": "Monitoring and Controlling Resources",
+    "name_th": null,
+    "description_en": "Monitoring and controlling resources and overseeing the spending of money.",
+    "group_id": "4.A.4",
+    "group_en": "Interacting With Others",
+    "subgroup_id": "4.A.4.c",
+    "subgroup_en": "Administering"
+  }
+]

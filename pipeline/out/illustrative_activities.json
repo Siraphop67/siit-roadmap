@@ -1,0 +1,284 @@
+{
+  "Realistic / General": [
+    "Build kitchen cabinets.",
+    "Drive a truck to deliver packages to offices and homes.",
+    "Put out forest fires.",
+    "Repair household appliances."
+  ],
+  "Investigative / General": [
+    "Develop a new medicine.",
+    "Develop a way to better predict the weather.",
+    "Study ways to reduce water pollution.",
+    "Work in a biology lab."
+  ],
+  "Artistic / General": [
+    "Compose or arrange music.",
+    "Create special effects for movies.",
+    "Draw pictures.",
+    "Write books or plays."
+  ],
+  "Social / General": [
+    "Give career guidance to people.",
+    "Help people with personal or emotional problems.",
+    "Perform rehabilitation therapy.",
+    "Teach a high school class."
+  ],
+  "Enterprising / General": [
+    "Manage a department within a large company.",
+    "Market a new line of clothing.",
+    "Represent a client in a lawsuit.",
+    "Start your own business."
+  ],
+  "Conventional / General": [
+    "Develop a spreadsheet using computer software.",
+    "Inventory supplies using a handheld computer.",
+    "Keep shipping and receiving records.",
+    "Load computer software into a large computer network."
+  ],
+  "Mechanics/Electronics / Basic": [
+    "Install computer systems.",
+    "Maintain aircraft engines.",
+    "Make repairs to industrial robots.",
+    "Repair motors and generators."
+  ],
+  "Construction/Woodwork / Basic": [
+    "Build and finish furniture.",
+    "Build and install cabinets.",
+    "Construct wood stairways.",
+    "Operate woodworking machines."
+  ],
+  "Transportation/Machine Operation / Basic": [
+    "Drive a bus or motor coach.",
+    "Operate a bulldozer to move dirt.",
+    "Operate a forklift to move boxes.",
+    "Transport materials in a truck or van."
+  ],
+  "Physical/Manual Labor / Basic": [
+    "Clean a work area.",
+    "Manually move cargo and freight.",
+    "Perform physical labor at a construction site.",
+    "Unload, sort, and move materials, equipment, or supplies."
+  ],
+  "Protective Service / Basic": [
+    "Apprehend and arrest suspects.",
+    "Guard inmates in a prison.",
+    "Investigate criminal activity.",
+    "Maintain order and protect life by enforcing laws."
+  ],
+  "Agriculture / Basic": [
+    "Develop plans to reduce soil erosion and protect rangelands.",
+    "Inspect crops for disease.",
+    "Plant, cultivate, and harvest crops.",
+    "Raise and tend to farm animals."
+  ],
+  "Nature/Outdoors / Basic": [
+    "Conserve wildlife habitats.",
+    "Manage public forested lands for recreational purposes.",
+    "Plant a public garden.",
+    "Train conservation workers in planting tree seedlings."
+  ],
+  "Animal Service / Basic": [
+    "Exercise animals in a shelter.",
+    "Provide treatment to sick or injured animals.",
+    "Supply animals with food, water, and personal care.",
+    "Train animals to assist persons with disabilities."
+  ],
+  "Athletics / Basic": [
+    "Coach a sports team.",
+    "Compete in an athletic event.",
+    "Play sports.",
+    "Train for an athletic event."
+  ],
+  "Engineering / Basic": [
+    "Apply principles of engineering in designing buildings.",
+    "Design, construct, and test aircraft, missiles, and spacecraft.",
+    "Explain engineering drawings.",
+    "Test performance of electronic and mechanical systems."
+  ],
+  "Physical Science / Basic": [
+    "Investigate the chemical composition of an unknown substance.",
+    "Study formation of stars using space-based telescopes.",
+    "Study ways to make foods safe and healthy.",
+    "Use computer models for weather forecasting."
+  ],
+  "Life Science / Basic": [
+    "Develop medically useful products for humans.",
+    "Investigate the effects of bacteria on humans and animals.",
+    "Prepare environmental impact reports on wildlife.",
+    "Study the science of genes."
+  ],
+  "Medical Science / Basic": [
+    "Conduct research on ways to treat a new type of illness.",
+    "Evaluate the performance of a newly developed medicine.",
+    "Investigate the causes of human disease.",
+    "Study ways of preventing disease."
+  ],
+  "Social Science / Basic": [
+    "Conduct research on economic issues.",
+    "Study cultural differences.",
+    "Study mental and emotional disorders.",
+    "Study public opinion on political issues."
+  ],
+  "Humanities / Basic": [
+    "Research and compare religious beliefs.",
+    "Research influences on a literary work.",
+    "Study the culture and history of a region of the world.",
+    "Study the history of the family."
+  ],
+  "Mathematics/Statistics / Basic": [
+    "Develop a statistical model to explain human behavior.",
+    "Extend mathematical knowledge in the field of geometry.",
+    "Make predictions based on statistical analyses.",
+    "Solve mathematical problems."
+  ],
+  "Information Technology / Basic": [
+    "Diagnose and resolve computer software problems.",
+    "Research security measures for computer systems.",
+    "Test, maintain, and monitor computer programs and systems.",
+    "Write and review code for software."
+  ],
+  "Visual Arts / Basic": [
+    "Create a sculpture.",
+    "Create computer-generated graphics or animation.",
+    "Create photography art prints.",
+    "Sketch a picture or design."
+  ],
+  "Applied Arts and Design / Basic": [
+    "Create appealing product designs for home appliances.",
+    "Create the set for film or theater productions.",
+    "Design and create handmade clothes.",
+    "Design displays to sell products in stores."
+  ],
+  "Performing Arts / Basic": [
+    "Act on stage for an audience.",
+    "Create new dance routines.",
+    "Direct stage, television, radio, video, or film productions.",
+    "Study and rehearse roles from scripts."
+  ],
+  "Music / Basic": [
+    "Create musical compositions, arrangements, or scores.",
+    "Perform music for a live audience.",
+    "Play a musical instrument.",
+    "Sing in a band."
+  ],
+  "Creative Writing / Basic": [
+    "Write a novel.",
+    "Write advertisements.",
+    "Write poetry or lyrics.",
+    "Write scripts for movies and media."
+  ],
+  "Media / Basic": [
+    "Develop content for a podcast.",
+    "Direct a television series.",
+    "Speak or read from scripted materials on radio or television.",
+    "Write and report human interest stories."
+  ],
+  "Culinary Art / Basic": [
+    "Coordinate activities of cooks engaged in food preparation.",
+    "Create new recipes or food presentations.",
+    "Develop a distinctive style of cooking.",
+    "Select and ensure freshness of food and ingredients for preparation."
+  ],
+  "Teaching/Education / Basic": [
+    "Adapt teaching methods to meet students' interests.",
+    "Instruct students in activities designed to further intellectual growth.",
+    "Teach school subjects.",
+    "Teach social skills to students."
+  ],
+  "Social Service / Basic": [
+    "Advocate for individual or community needs.",
+    "Assist people with special needs.",
+    "Counsel clients with mental health issues.",
+    "Provide personal and economic assistance for homeless individuals."
+  ],
+  "Health Care Service / Basic": [
+    "Administer first aid treatment or life support to injured persons.",
+    "Develop medical treatment plans for patients.",
+    "Prescribe medications.",
+    "Provide preventive care to individuals."
+  ],
+  "Religious Activities / Basic": [
+    "Lead a religious group.",
+    "Organize religious services.",
+    "Plan religious education programs.",
+    "Provide spiritual guidance."
+  ],
+  "Personal Service / Basic": [
+    "Assist customers with problems or questions.",
+    "Help individuals plan special events.",
+    "Make reservations for guests, such as for dinner, spa treatments, or golf tee times.",
+    "Make travel arrangements for sightseeing or other tours."
+  ],
+  "Professional Advising / Basic": [
+    "Advise people on how to have a successful career.",
+    "Coach students on study skills.",
+    "Counsel people how to achieve their professional goals.",
+    "Teach employees leadership and soft skills."
+  ],
+  "Business Initiatives / Basic": [
+    "Create business strategies or policies to increase productivity.",
+    "Develop a long-term strategic plan for a company.",
+    "Identify partner companies to pursue new business opportunities.",
+    "Plan activities of businesses to maximize returns on investments."
+  ],
+  "Sales / Basic": [
+    "Demonstrate products to consumers.",
+    "Direct sales or customer service activities.",
+    "Persuade customers to buy a new product.",
+    "Sell goods at bargain prices."
+  ],
+  "Marketing/Advertising / Basic": [
+    "Develop promotional materials for advertising.",
+    "Plan an advertising or marketing campaign.",
+    "Promote a new product by advertising.",
+    "Use social media to market a company."
+  ],
+  "Finance / Basic": [
+    "Analyze financials and securities of a company.",
+    "Make investments to generate future income.",
+    "Manage large amounts of money for a business.",
+    "Plan and direct financial decisions for a business."
+  ],
+  "Accounting / Basic": [
+    "Keep accounting records for a company.",
+    "Prepare budgets for a business.",
+    "Prepare employee payroll.",
+    "Verify and record numerical data for financial records."
+  ],
+  "Human Resources / Basic": [
+    "Conduct training to improve employee skills and organizational performance.",
+    "Interpret and explain company policies and benefits to employees.",
+    "Maintain employee personnel records.",
+    "Recruit and hire employees for a company."
+  ],
+  "Office Work / Basic": [
+    "Answer telephones, direct calls, and take messages.",
+    "Maintain and update filing, inventory, and database systems.",
+    "Operate office machines, such as printers and scanners.",
+    "Schedule appointments for customers."
+  ],
+  "Management/Administration / Basic": [
+    "Develop organizational goals or objectives.",
+    "Manage an organization or group of people.",
+    "Plan or coordinate one or more administrative services.",
+    "Supervise organizational operations or projects."
+  ],
+  "Public Speaking / Basic": [
+    "Be a speaker at a club meeting.",
+    "Discuss your ideas on a podcast.",
+    "Make a public speech to raise money for a worthy cause.",
+    "Provide a public announcement on TV or radio."
+  ],
+  "Politics / Basic": [
+    "Campaign for political office.",
+    "Develop knowledge of government policy decisions.",
+    "Engage in a political debate.",
+    "Lead a political campaign."
+  ],
+  "Law / Basic": [
+    "Defend a client in court.",
+    "Draw up legal documents.",
+    "Mediate legal disputes.",
+    "Provide legal advice to clients."
+  ]
+}

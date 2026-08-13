@@ -1,0 +1,246 @@
+{
+  "elements": [
+    {
+      "id": "1.C.1.a",
+      "name_en": "Achievement/Effort",
+      "name_th": null,
+      "description_en": "Job requires establishing and maintaining personally challenging achievement goals and exerting effort toward mastering tasks."
+    },
+    {
+      "id": "1.C.1.b",
+      "name_en": "Persistence",
+      "name_th": null,
+      "description_en": "Job requires persistence in the face of obstacles."
+    },
+    {
+      "id": "1.C.1.c",
+      "name_en": "Initiative",
+      "name_th": null,
+      "description_en": "Job requires a willingness to take on responsibilities and challenges."
+    },
+    {
+      "id": "1.C.2.b",
+      "name_en": "Leadership",
+      "name_th": null,
+      "description_en": "Job requires a willingness to lead, take charge, and offer opinions and direction."
+    },
+    {
+      "id": "1.C.3.a",
+      "name_en": "Cooperation",
+      "name_th": null,
+      "description_en": "Job requires being pleasant with others on the job and displaying a good-natured, cooperative attitude."
+    },
+    {
+      "id": "1.C.3.b",
+      "name_en": "Concern for Others",
+      "name_th": null,
+      "description_en": "Job requires being sensitive to others' needs and feelings and being understanding and helpful on the job."
+    },
+    {
+      "id": "1.C.3.c",
+      "name_en": "Social Orientation",
+      "name_th": null,
+      "description_en": "Job requires preferring to work with others rather than alone, and being personally connected with others on the job."
+    },
+    {
+      "id": "1.C.4.a",
+      "name_en": "Self-Control",
+      "name_th": null,
+      "description_en": "Job requires maintaining composure, keeping emotions in check, controlling anger, and avoiding aggressive behavior, even in very difficult situations."
+    },
+    {
+      "id": "1.C.4.b",
+      "name_en": "Stress Tolerance",
+      "name_th": null,
+      "description_en": "Job requires accepting criticism and dealing calmly and effectively with high-stress situations."
+    },
+    {
+      "id": "1.C.4.c",
+      "name_en": "Adaptability/Flexibility",
+      "name_th": null,
+      "description_en": "Job requires being open to change (positive or negative) and to considerable variety in the workplace."
+    },
+    {
+      "id": "1.C.5.a",
+      "name_en": "Dependability",
+      "name_th": null,
+      "description_en": "Job requires being reliable, responsible, and dependable, and fulfilling obligations."
+    },
+    {
+      "id": "1.C.5.b",
+      "name_en": "Attention to Detail",
+      "name_th": null,
+      "description_en": "Job requires being careful about detail and thorough in completing work tasks."
+    },
+    {
+      "id": "1.C.5.c",
+      "name_en": "Integrity",
+      "name_th": null,
+      "description_en": "Job requires being honest and ethical."
+    },
+    {
+      "id": "1.C.6",
+      "name_en": "Independence",
+      "name_th": null,
+      "description_en": "Job requires developing one's own ways of doing things, guiding oneself with little or no supervision, and depending on oneself to get things done."
+    },
+    {
+      "id": "1.C.7.a",
+      "name_en": "Innovation",
+      "name_th": null,
+      "description_en": "Job requires creativity and alternative thinking to develop new ideas for and answers to work-related problems."
+    },
+    {
+      "id": "1.C.7.b",
+      "name_en": "Analytical Thinking",
+      "name_th": null,
+      "description_en": "Job requires analyzing information and using logic to address work-related issues and problems."
+    }
+  ],
+  "profiles": {
+    "15-1251.00": {
+      "1.C.1.a": 4.43,
+      "1.C.1.b": 4.4,
+      "1.C.1.c": 4.44,
+      "1.C.2.b": 3.48,
+      "1.C.3.a": 4.56,
+      "1.C.3.b": 3.71,
+      "1.C.3.c": 3.21,
+      "1.C.4.a": 4.12,
+      "1.C.4.b": 3.9,
+      "1.C.4.c": 4.05,
+      "1.C.5.a": 4.29,
+      "1.C.5.b": 4.97,
+      "1.C.5.c": 4.64,
+      "1.C.6": 4.54,
+      "1.C.7.a": 4.0,
+      "1.C.7.b": 4.74
+    },
+    "15-2051.01": {
+      "1.C.1.a": 3.64,
+      "1.C.1.b": 3.91,
+      "1.C.1.c": 4.0,
+      "1.C.2.b": 3.23,
+      "1.C.3.a": 3.91,
+      "1.C.3.b": 2.59,
+      "1.C.3.c": 2.36,
+      "1.C.4.a": 3.23,
+      "1.C.4.b": 3.82,
+      "1.C.4.c": 4.09,
+      "1.C.5.a": 4.27,
+      "1.C.5.b": 4.59,
+      "1.C.5.c": 4.32,
+      "1.C.6": 3.73,
+      "1.C.7.a": 3.68,
+      "1.C.7.b": 4.95
+    },
+    "17-2199.08": {
+      "1.C.1.a": 4.27,
+      "1.C.1.b": 4.3,
+      "1.C.1.c": 4.23,
+      "1.C.2.b": 3.48,
+      "1.C.3.a": 4.13,
+      "1.C.3.b": 3.3,
+      "1.C.3.c": 2.67,
+      "1.C.4.a": 3.7,
+      "1.C.4.b": 3.93,
+      "1.C.4.c": 4.1,
+      "1.C.5.a": 4.2,
+      "1.C.5.b": 4.47,
+      "1.C.5.c": 4.23,
+      "1.C.6": 3.7,
+      "1.C.7.a": 4.2,
+      "1.C.7.b": 4.5
+    },
+    "17-2051.00": {
+      "1.C.1.a": 3.76,
+      "1.C.1.b": 3.71,
+      "1.C.1.c": 4.05,
+      "1.C.2.b": 3.57,
+      "1.C.3.a": 3.71,
+      "1.C.3.b": 3.1,
+      "1.C.3.c": 2.81,
+      "1.C.4.a": 3.81,
+      "1.C.4.b": 3.76,
+      "1.C.4.c": 3.67,
+      "1.C.5.a": 4.48,
+      "1.C.5.b": 4.38,
+      "1.C.5.c": 4.57,
+      "1.C.6": 3.5,
+      "1.C.7.a": 3.43,
+      "1.C.7.b": 4.38
+    },
+    "17-2041.00": {
+      "1.C.1.a": 4.23,
+      "1.C.1.b": 4.18,
+      "1.C.1.c": 4.23,
+      "1.C.2.b": 3.41,
+      "1.C.3.a": 3.86,
+      "1.C.3.b": 2.82,
+      "1.C.3.c": 2.41,
+      "1.C.4.a": 3.14,
+      "1.C.4.b": 3.45,
+      "1.C.4.c": 3.86,
+      "1.C.5.a": 4.27,
+      "1.C.5.b": 4.64,
+      "1.C.5.c": 4.82,
+      "1.C.6": 3.68,
+      "1.C.7.a": 4.19,
+      "1.C.7.b": 4.86
+    },
+    "17-2112.00": {
+      "1.C.1.a": 4.2,
+      "1.C.1.b": 4.22,
+      "1.C.1.c": 4.1,
+      "1.C.2.b": 4.01,
+      "1.C.3.a": 4.23,
+      "1.C.3.b": 3.6,
+      "1.C.3.c": 3.09,
+      "1.C.4.a": 4.21,
+      "1.C.4.b": 4.16,
+      "1.C.4.c": 4.26,
+      "1.C.5.a": 4.45,
+      "1.C.5.b": 4.61,
+      "1.C.5.c": 4.33,
+      "1.C.6": 4.21,
+      "1.C.7.a": 3.97,
+      "1.C.7.b": 4.28
+    },
+    "17-2071.00": {
+      "1.C.1.a": 3.59,
+      "1.C.1.b": 4.32,
+      "1.C.1.c": 4.18,
+      "1.C.2.b": 3.32,
+      "1.C.3.a": 4.14,
+      "1.C.3.b": 3.4,
+      "1.C.3.c": 3.19,
+      "1.C.4.a": 3.74,
+      "1.C.4.b": 3.79,
+      "1.C.4.c": 4.01,
+      "1.C.5.a": 3.92,
+      "1.C.5.b": 4.66,
+      "1.C.5.c": 3.99,
+      "1.C.6": 3.43,
+      "1.C.7.a": 3.71,
+      "1.C.7.b": 4.27
+    },
+    "17-2141.00": {
+      "1.C.1.a": 3.85,
+      "1.C.1.b": 3.99,
+      "1.C.1.c": 4.08,
+      "1.C.2.b": 3.93,
+      "1.C.3.a": 4.31,
+      "1.C.3.b": 3.71,
+      "1.C.3.c": 2.89,
+      "1.C.4.a": 4.1,
+      "1.C.4.b": 4.25,
+      "1.C.4.c": 3.91,
+      "1.C.5.a": 4.27,
+      "1.C.5.b": 4.3,
+      "1.C.5.c": 4.46,
+      "1.C.6": 3.69,
+      "1.C.7.a": 3.87,
+      "1.C.7.b": 4.39
+    }
+  }
+}

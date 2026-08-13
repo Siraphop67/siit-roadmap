@@ -1,0 +1,106 @@
+{
+  "elements": [
+    {
+      "id": "1.B.1.a",
+      "name_en": "Realistic",
+      "name_th": null,
+      "description_en": "Work involves designing, building, or repairing of equipment, materials, or structures, engaging in physical activity, or working outdoors. Realistic occupations are often associated with engineering, mechanics and electronics, construction, woodworking, transportation, machine operation, agriculture, animal services, physical or manual labor, athletics, or protective services."
+    },
+    {
+      "id": "1.B.1.b",
+      "name_en": "Investigative",
+      "name_th": null,
+      "description_en": "Work involves studying and researching non-living objects, living organisms, disease or other forms of impairment, or human behavior. Investigative occupations are often associated with physical, life, medical, or social sciences, and can be found in the fields of humanities, mathematics/statistics, information technology, or health care service."
+    },
+    {
+      "id": "1.B.1.c",
+      "name_en": "Artistic",
+      "name_th": null,
+      "description_en": "Work involves creating original visual artwork, performances, written works, food, or music for a variety of media, or applying artistic principles to the design of various objects and materials. Artistic occupations are often associated with visual arts, applied arts and design, performing arts, music, creative writing, media, or culinary art."
+    },
+    {
+      "id": "1.B.1.d",
+      "name_en": "Social",
+      "name_th": null,
+      "description_en": "Work involves helping, teaching, advising, assisting, or providing service to others. Social occupations are often associated with social, health care, personal service, teaching/education, or religious activities."
+    },
+    {
+      "id": "1.B.1.e",
+      "name_en": "Enterprising",
+      "name_th": null,
+      "description_en": "Work involves managing, negotiating, marketing, or selling, typically in a business setting, or leading or advising people in political and legal situations. Enterprising occupations are often associated with business initiatives, sales, marketing/advertising, finance, management/administration, professional advising, public speaking, politics, or law."
+    },
+    {
+      "id": "1.B.1.f",
+      "name_en": "Conventional",
+      "name_th": null,
+      "description_en": "Work involves following procedures and regulations to organize information or data, typically in a business setting. Conventional occupations are often associated with office work, accounting, mathematics/statistics, information technology, finance, or human resources."
+    }
+  ],
+  "profiles": {
+    "15-1251.00": {
+      "1.B.1.a": 3.31,
+      "1.B.1.b": 5.18,
+      "1.B.1.c": 2.62,
+      "1.B.1.d": 2.01,
+      "1.B.1.e": 2.04,
+      "1.B.1.f": 5.8
+    },
+    "15-2051.01": {
+      "1.B.1.a": 1.12,
+      "1.B.1.b": 5.46,
+      "1.B.1.c": 1.95,
+      "1.B.1.d": 1.88,
+      "1.B.1.e": 4.46,
+      "1.B.1.f": 5.61
+    },
+    "17-2199.08": {
+      "1.B.1.a": 6.1,
+      "1.B.1.b": 5.79,
+      "1.B.1.c": 1.81,
+      "1.B.1.d": 1.43,
+      "1.B.1.e": 1.74,
+      "1.B.1.f": 4.57
+    },
+    "17-2051.00": {
+      "1.B.1.a": 6.36,
+      "1.B.1.b": 5.11,
+      "1.B.1.c": 2.15,
+      "1.B.1.d": 1.79,
+      "1.B.1.e": 2.9,
+      "1.B.1.f": 4.63
+    },
+    "17-2041.00": {
+      "1.B.1.a": 6.28,
+      "1.B.1.b": 5.73,
+      "1.B.1.c": 1.76,
+      "1.B.1.d": 1.06,
+      "1.B.1.e": 1.83,
+      "1.B.1.f": 4.61
+    },
+    "17-2112.00": {
+      "1.B.1.a": 4.7,
+      "1.B.1.b": 4.88,
+      "1.B.1.c": 1.65,
+      "1.B.1.d": 1.4,
+      "1.B.1.e": 3.52,
+      "1.B.1.f": 5.41
+    },
+    "17-2071.00": {
+      "1.B.1.a": 6.35,
+      "1.B.1.b": 5.31,
+      "1.B.1.c": 2.01,
+      "1.B.1.d": 1.57,
+      "1.B.1.e": 2.31,
+      "1.B.1.f": 5.01
+    },
+    "17-2141.00": {
+      "1.B.1.a": 6.6,
+      "1.B.1.b": 5.3,
+      "1.B.1.c": 2.2,
+      "1.B.1.d": 1.1,
+      "1.B.1.e": 1.76,
+      "1.B.1.f": 4.65
+    }
+  }
+}

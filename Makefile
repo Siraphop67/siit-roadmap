@@ -71,8 +71,10 @@ check-postings:
 postings:
 	@$(PY) pipeline/2_extract_postings.py --min-postings $(or $(MIN),2)
 
+# typegen ก่อน tsc เสมอ — Next 16 สร้าง type ของ route/layout ตอน build
+# clone ใหม่ที่ยังไม่เคย build จะเจอ "Cannot find name 'LayoutProps'" ถ้าข้ามขั้นนี้
 lint:
-	@test -d frontend && (cd frontend && npx tsc --noEmit && npx eslint app components lib) || true
+	@test -d frontend && (cd frontend && npx next typegen && npx tsc --noEmit && npx eslint app lib) || true
 
 reset:
 	@rm -f backend/siit_roadmap.db

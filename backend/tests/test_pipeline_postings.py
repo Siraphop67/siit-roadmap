@@ -41,6 +41,28 @@ def load_stage2():
 stage2 = load_stage2()
 
 
+def test_ผลของท่อO_NETอยู่ในrepoจริง():
+    """🔴 เคยพังมาแล้วและไม่มีใครเห็น
+
+    `.gitignore` มีบรรทัด `out/` ที่ตั้งใจกัน next export แต่มันกลืน `pipeline/out/` ไปด้วย
+    ผลของท่อ O*NET จึงไม่เคยเข้า repo สักครั้ง ทั้งที่คอมเมนต์ใน .gitignore บอกเองว่าเก็บ
+
+    อาการที่ตามมา — และเหตุผลที่ไม่มีใครเห็นบนเครื่องตัวเอง (เพราะ make setup สร้างให้):
+      · clone ใหม่แล้วฝั่ง "ยังไม่รู้" ใช้ไม่ได้เลย ไม่มีโปรไฟล์กิจกรรมให้จับคู่
+      · เทสต์ 20 ตัวถูก skip เงียบ ๆ แทนที่จะแดง
+      · docker build ล้มที่ COPY pipeline/out
+
+    เทสต์นี้ทำให้อาการนั้นเป็นสีแดง ไม่ใช่ความเงียบ
+    """
+    out = REPO / "pipeline" / "out"
+    required = ["target_activity_profiles.json", "onet_skills.json", "work_activities.json"]
+    missing = [f for f in required if not (out / f).exists()]
+    assert not missing, (
+        f"ไม่มี {missing} ใน pipeline/out/ — ถ้าเพิ่ง clone มาแปลว่าไฟล์หลุดจาก repo อีกแล้ว "
+        "(เช็ค .gitignore) · ถ้าเป็นเครื่องตัวเองให้รัน make pipeline"
+    )
+
+
 BODY_HEAD = """---
 org: บริษัททดสอบ จำกัด
 title: Process Engineer

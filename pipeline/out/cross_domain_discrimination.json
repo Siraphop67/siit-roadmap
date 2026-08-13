@@ -1,0 +1,230 @@
+{
+  "occupations": 88,
+  "major_groups": [
+    "11",
+    "13",
+    "15",
+    "17",
+    "19",
+    "21",
+    "23",
+    "25",
+    "27",
+    "29",
+    "31",
+    "33",
+    "35",
+    "37",
+    "39",
+    "41",
+    "43",
+    "45",
+    "47",
+    "49",
+    "51",
+    "53"
+  ],
+  "per_group": 4,
+  "targets": {
+    "11-3031.01": "Treasurers and Controllers",
+    "11-3071.04": "Supply Chain Managers",
+    "11-9041.01": "Biofuels/Biodiesel Technology and Product Development Managers",
+    "11-9151.00": "Social and Community Service Managers",
+    "13-1041.03": "Equal Opportunity Representatives and Officers",
+    "13-1081.00": "Logisticians",
+    "13-1161.00": "Market Research Analysts and Marketing Specialists",
+    "13-2052.00": "Personal Financial Advisors",
+    "15-1232.00": "Computer User Support Specialists",
+    "15-1244.00": "Network and Computer Systems Administrators",
+    "15-1299.02": "Geographic Information Systems Technologists and Technicians",
+    "15-2031.00": "Operations Research Analysts",
+    "17-2051.02": "Water/Wastewater Engineers",
+    "17-2112.03": "Manufacturing Engineers",
+    "17-2199.06": "Microsystems Engineers",
+    "17-3023.00": "Electrical and Electronic Engineering Technologists and Technicians",
+    "19-1031.02": "Range Managers",
+    "19-2041.02": "Environmental Restoration Planners",
+    "19-3039.03": "Clinical Neuropsychologists",
+    "19-4031.00": "Chemical Technicians",
+    "21-1013.00": "Marriage and Family Therapists",
+    "21-1021.00": "Child, Family, and School Social Workers",
+    "21-1091.00": "Health Education Specialists",
+    "21-1094.00": "Community Health Workers",
+    "23-1012.00": "Judicial Law Clerks",
+    "23-1021.00": "Administrative Law Judges, Adjudicators, and Hearing Officers",
+    "23-1023.00": "Judges, Magistrate Judges, and Magistrates",
+    "23-2011.00": "Paralegals and Legal Assistants",
+    "25-1054.00": "Physics Teachers, Postsecondary",
+    "25-1111.00": "Criminal Justice and Law Enforcement Teachers, Postsecondary",
+    "25-1194.00": "Career/Technical Education Teachers, Postsecondary",
+    "25-3011.00": "Adult Basic Education, Adult Secondary Education, and English as a Second Language Instructors",
+    "27-1024.00": "Graphic Designers",
+    "27-2012.05": "Media Technical Directors/Managers",
+    "27-2042.00": "Musicians and Singers",
+    "27-3091.00": "Interpreters and Translators",
+    "29-1126.00": "Respiratory Therapists",
+    "29-1213.00": "Dermatologists",
+    "29-1291.00": "Acupuncturists",
+    "29-2052.00": "Pharmacy Technicians",
+    "31-1132.00": "Orderlies",
+    "31-2021.00": "Physical Therapist Assistants",
+    "31-9092.00": "Medical Assistants",
+    "31-9096.00": "Veterinary Assistants and Laboratory Animal Caretakers",
+    "33-2021.00": "Fire Inspectors and Investigators",
+    "33-3021.02": "Police Identification and Records Officers",
+    "33-3051.04": "Customs and Border Protection Officers",
+    "33-9032.00": "Security Guards",
+    "35-2012.00": "Cooks, Institution and Cafeteria",
+    "35-2015.00": "Cooks, Short Order",
+    "35-3023.00": "Fast Food and Counter Workers",
+    "35-3041.00": "Food Servers, Nonrestaurant",
+    "37-1012.00": "First-Line Supervisors of Landscaping, Lawn Service, and Groundskeeping Workers",
+    "37-2012.00": "Maids and Housekeeping Cleaners",
+    "37-2021.00": "Pest Control Workers",
+    "37-3012.00": "Pesticide Handlers, Sprayers, and Applicators, Vegetation",
+    "39-3012.00": "Gambling and Sports Book Writers and Runners",
+    "39-4011.00": "Embalmers",
+    "39-5092.00": "Manicurists and Pedicurists",
+    "39-7012.00": "Travel Guides",
+    "41-2021.00": "Counter and Rental Clerks",
+    "41-3021.00": "Insurance Sales Agents",
+    "41-4011.07": "Solar Sales Representatives and Assessors",
+    "41-9021.00": "Real Estate Brokers",
+    "43-4011.00": "Brokerage Clerks",
+    "43-4131.00": "Loan Interviewers and Clerks",
+    "43-5032.00": "Dispatchers, Except Police, Fire, and Ambulance",
+    "43-6013.00": "Medical Secretaries and Administrative Assistants",
+    "45-2021.00": "Animal Breeders",
+    "45-2091.00": "Agricultural Equipment Operators",
+    "45-3031.00": "Fishing and Hunting Workers",
+    "45-4021.00": "Fallers",
+    "47-2061.00": "Construction Laborers",
+    "47-2151.00": "Pipelayers",
+    "47-3014.00": "Helpers--Painters, Paperhangers, Plasterers, and Stucco Masons",
+    "47-4099.03": "Weatherization Installers and Technicians",
+    "49-2097.00": "Audiovisual Equipment Installers and Repairers",
+    "49-3051.00": "Motorboat Mechanics and Service Technicians",
+    "49-9041.00": "Industrial Machinery Mechanics",
+    "49-9071.00": "Maintenance and Repair Workers, General",
+    "51-4032.00": "Drilling and Boring Machine Tool Setters, Operators, and Tenders, Metal and Plastic",
+    "51-5113.00": "Print Binding and Finishing Workers",
+    "51-8012.00": "Power Distributors and Dispatchers",
+    "51-9071.06": "Gem and Diamond Workers",
+    "53-3011.00": "Ambulance Drivers and Attendants, Except Emergency Medical Technicians",
+    "53-4041.00": "Subway and Streetcar Operators",
+    "53-6051.01": "Aviation Inspectors",
+    "53-7062.00": "Laborers and Freight, Stock, and Material Movers, Hand"
+  },
+  "cross_domain": {
+    "work_activities": {
+      "dimensions": 41,
+      "worst_pair": {
+        "a": "Supply Chain Managers",
+        "b": "Logisticians",
+        "distance": 1.764
+      },
+      "best_pair": {
+        "a": "Treasurers and Controllers",
+        "b": "Fallers",
+        "distance": 12.342
+      },
+      "ratio_worst_over_best": 0.143
+    },
+    "riasec": {
+      "dimensions": 6,
+      "worst_pair": {
+        "a": "Industrial Machinery Mechanics",
+        "b": "Drilling and Boring Machine Tool Setters, Operators, and Tenders, Metal and Plastic",
+        "distance": 0.301
+      },
+      "best_pair": {
+        "a": "Social and Community Service Managers",
+        "b": "Drilling and Boring Machine Tool Setters, Operators, and Tenders, Metal and Plastic",
+        "distance": 9.652
+      },
+      "ratio_worst_over_best": 0.031
+    }
+  },
+  "engineering_baseline": {
+    "work_activities": {
+      "dimensions": 41,
+      "worst_pair": {
+        "a": "วิศวกรการผลิต",
+        "b": "วิศวกรออกแบบเครื่องกล",
+        "distance": 2.286
+      },
+      "best_pair": {
+        "a": "วิศวกรข้อมูล (ตัวแทน: Business Intelligence Analysts)",
+        "b": "วิศวกรหุ่นยนต์",
+        "distance": 7.277
+      },
+      "ratio_worst_over_best": 0.314
+    },
+    "riasec": {
+      "dimensions": 6,
+      "worst_pair": {
+        "a": "วิศวกรหุ่นยนต์",
+        "b": "วิศวกรกระบวนการผลิต",
+        "distance": 0.43
+      },
+      "best_pair": {
+        "a": "วิศวกรข้อมูล (ตัวแทน: Business Intelligence Analysts)",
+        "b": "วิศวกรออกแบบเครื่องกล",
+        "distance": 6.24
+      },
+      "ratio_worst_over_best": 0.069
+    }
+  },
+  "hardest_pairs": [
+    {
+      "a": "Supply Chain Managers",
+      "b": "Logisticians",
+      "distance": 1.764
+    },
+    {
+      "a": "Pest Control Workers",
+      "b": "Pesticide Handlers, Sprayers, and Applicators, Vegetation",
+      "distance": 1.848
+    },
+    {
+      "a": "Microsystems Engineers",
+      "b": "Electrical and Electronic Engineering Technologists and Technicians",
+      "distance": 2.316
+    },
+    {
+      "a": "Health Education Specialists",
+      "b": "Community Health Workers",
+      "distance": 2.471
+    },
+    {
+      "a": "First-Line Supervisors of Landscaping, Lawn Service, and Groundskeeping Workers",
+      "b": "Weatherization Installers and Technicians",
+      "distance": 2.478
+    },
+    {
+      "a": "Biofuels/Biodiesel Technology and Product Development Managers",
+      "b": "Manufacturing Engineers",
+      "distance": 2.511
+    },
+    {
+      "a": "Geographic Information Systems Technologists and Technicians",
+      "b": "Operations Research Analysts",
+      "distance": 2.53
+    },
+    {
+      "a": "Electrical and Electronic Engineering Technologists and Technicians",
+      "b": "Chemical Technicians",
+      "distance": 2.534
+    },
+    {
+      "a": "Computer User Support Specialists",
+      "b": "Electrical and Electronic Engineering Technologists and Technicians",
+      "distance": 2.565
+    },
+    {
+      "a": "Electrical and Electronic Engineering Technologists and Technicians",
+      "b": "Media Technical Directors/Managers",
+      "distance": 2.59
+    }
+  ]
+}

@@ -109,6 +109,21 @@ def test_posting_idเป็นasciiล้วนแม้ชื่อบริ�
     assert "scg-chemicals" in submit(client, org="SCG Chemicals จำกัด")["posting_id"]
 
 
+def test_ข้อความที่บริษัทเห็นไม่ใช้ชื่อฟิลด์ในโค้ด(client):
+    """คำเตือนที่โชว์ HR ต้องเป็นชื่อช่องบนฟอร์ม ไม่ใช่ `target_id`
+
+    คลาสเดียวกับข้อความ "repo เป็น public" — ข้อความที่เขียนไว้สำหรับทีม
+    ไม่ควรหลุดไปถึงคนนอกที่ไม่มีบริบท
+    """
+    r = client.post("/api/employer/posting", json={
+        k: v for k, v in SUBMISSION.items() if k != "target_id"})
+    warnings = r.json()["warnings"]
+    assert warnings
+    for w in warnings:
+        assert "`" not in w, f"คำเตือนยังใช้ชื่อฟิลด์ในโค้ด: {w}"
+    assert any("อาชีพที่ตรงที่สุด" in w for w in warnings), "ต้องใช้ชื่อช่องเดียวกับบนฟอร์ม"
+
+
 def test_ไม่มีทางลัดให้ส่งมาแล้วอนุมัติเลย(client):
     """ส่ง status มาเองต้องไม่มีผล"""
     r = client.post("/api/employer/posting", json={**SUBMISSION, "status": "approved"})
@@ -225,7 +240,11 @@ def test_อีเมลในตัวประกาศถูกปฏิเ�
     r = client.post("/api/employer/posting", json={
         **SUBMISSION, "raw_text": BODY + "\nส่งใบสมัครมาที่ hr@example.com"})
     assert r.status_code == 422
-    assert any("อีเมล" in e for e in r.json()["detail"]["errors"])
+    msg = next(e for e in r.json()["detail"]["errors"] if "อีเมล" in e)
+    # 🔴 ข้อความต้องเขียนถึงบริษัท ไม่ใช่ถึงทีม — บริษัทไม่รู้จัก repo
+    #    และประกาศที่เขาส่งไม่ได้เข้า repo ด้วยซ้ำ
+    assert "repo" not in msg, f"ข้อความเขียนถึงคนผิดกลุ่ม: {msg}"
+    assert "ช่องอีเมลติดต่อ" in msg, "ต้องบอกทางออกว่าให้ย้ายไปช่องไหน"
 
     assert submit(client, contact_email="hr@example.com")["status"] == "pending"
 

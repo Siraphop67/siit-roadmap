@@ -1,0 +1,112 @@
+# ด่านก่อน merge — CONTRIBUTING บอกว่า main ต้องรันได้และเทสต์เขียวเสมอ
+# ก่อนหน้านี้กติกานั้นอาศัยว่าทุกคนจำได้ว่าต้องรัน make test เอง
+#
+# 🔴 งาน docker คือด่านเดียวที่พิสูจน์ Dockerfile ได้จริง
+#    เครื่องที่เขียน Dockerfile พวกนี้ไม่มี Docker ติดตั้ง จึง build ทดสอบเองไม่ได้
+#    ปล่อยไว้แบบนั้นคือกับดักเดียวกับที่ prototype/docker-compose.yml ติดไปแล้ว
+#    ("ยังไม่ได้ทดสอบจริง เพราะเครื่องที่สร้างต้นแบบนี้ไม่มี Docker")
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    name: เทสต์ backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r backend/requirements.txt
+
+      # เทสต์ 8 ตัวใน CONTRIBUTING §"เทสต์ที่ห้ามทำให้แดง" อยู่ในชุดนี้
+      - name: pytest
+        working-directory: backend
+        run: python -m pytest tests/ -q
+
+      # 🔒 กติกาข้อ 5 — โค้ดต้องรายงานสถานะตามจริง ไม่ใช่ตามที่เราอยากให้เป็น
+      - name: /health โหลดข้อมูลตั้งต้นครบจริง
+        working-directory: backend
+        run: |
+          python -m uvicorn app.main:app --port 8000 &
+          for i in $(seq 1 20); do curl -sf http://127.0.0.1:8000/api/health >/dev/null && break; sleep 1; done
+          curl -s http://127.0.0.1:8000/api/health | tee /dev/stderr | python -c '
+          import json, sys
+          h = json.load(sys.stdin)
+          assert h["skills"] == 73, h
+          assert h["skill_edges"] == 105, h
+          assert h["career_targets"] == 8, h
+          assert h["extractor_is_real_llm"] is False, "ยังไม่มี LLM key — ห้ามรายงานว่ามี"
+          print("ok")
+          '
+
+  frontend:
+    name: เทสต์ frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+        working-directory: frontend
+
+      # lib/api.ts เป็นสัญญาที่อีกสามคนต่ออยู่ — type พังคือทุกหน้าพัง
+      - run: npx tsc --noEmit
+        working-directory: frontend
+      - run: npx eslint app lib
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  docker:
+    name: build image ทั้งสองตัว
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: build API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.backend
+          push: false
+          load: true
+          tags: siit-roadmap-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: build หน้าเว็บ
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: false
+          load: true
+          tags: siit-roadmap-web:ci
+          build-args: NEXT_PUBLIC_API_BASE=http://localhost:8000/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # build ผ่านไม่ได้แปลว่ารันได้ — ต้องเห็นว่ามันตอบจริง
+      - name: image รันแล้วตอบจริงไหม
+        run: |
+          docker run -d --name api -p 8000:8000 siit-roadmap-api:ci
+          docker run -d --name web -p 3000:3000 siit-roadmap-web:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/api/health >/dev/null && break; sleep 2; done
+          curl -sf http://127.0.0.1:8000/api/health || (docker logs api; exit 1)
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:3000/ >/dev/null && break; sleep 2; done
+          curl -sf -o /dev/null http://127.0.0.1:3000/ || (docker logs web; exit 1)
+          echo "ทั้งสอง image รันแล้วตอบจริง"

@@ -1,0 +1,41 @@
+# หน้าเว็บ — Next.js 16 standalone
+#
+#   docker build -f Dockerfile.frontend \
+#     --build-arg NEXT_PUBLIC_API_BASE=https://api.example.com/api \
+#     -t siit-roadmap-web .
+#
+# 🔴 NEXT_PUBLIC_API_BASE ถูกฝังลงไปตอน build ไม่ใช่ตอนรัน
+#    เปลี่ยนที่อยู่ API แล้วต้อง build image ใหม่ ส่ง env ตอน run ไม่มีผล
+#    นี่คือจุดที่คนพลาดบ่อยที่สุดเวลา deploy Next.js
+
+FROM node:22-slim AS deps
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+FROM node:22-slim AS build
+WORKDIR /app
+ARG NEXT_PUBLIC_API_BASE=http://localhost:8000/api
+ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE \
+    NEXT_TELEMETRY_DISABLED=1
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ ./
+RUN npm run build
+
+FROM node:22-slim AS run
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# standalone ไม่คัดลอก public กับ .next/static ให้เอง ต้องวางเองตามคู่มือของ Next
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+
+RUN useradd --create-home --uid 10001 web && chown -R web:web /app
+USER web
+
+EXPOSE 3000
+CMD ["node", "server.js"]

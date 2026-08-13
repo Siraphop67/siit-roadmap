@@ -1,0 +1,57 @@
+# รันทั้งระบบด้วยคำสั่งเดียว — API + หน้าเว็บ + Postgres
+#
+#   cp backend/.env.example backend/.env     # แก้รหัสผ่านก่อน
+#   docker compose up --build
+#
+#   หน้าเว็บ  http://localhost:3000
+#   API      http://localhost:8000/docs
+#
+# 🔴 ใช้ Postgres ไม่ใช่ SQLite โดยตั้งใจ
+#    SQLite ใน container จะหายทุกครั้งที่ deploy ใหม่ · ระหว่าง Hack Days เราต้องเก็บ
+#    ข้อมูลผู้ใช้จริงก่อน-หลัง ซึ่ง docs/TEAM.md บอกไว้เองว่า "เก็บย้อนหลังไม่ได้"
+#    ข้อมูลหายรอบเดียว = ไม่มีตัวเลขพูดวันที่ 11
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-siit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-siit}
+      POSTGRES_DB: ${POSTGRES_DB:-siit_roadmap}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-siit} -d ${POSTGRES_DB:-siit_roadmap}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-siit}:${POSTGRES_PASSWORD:-siit}@db:5432/${POSTGRES_DB:-siit_roadmap}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      LLM_PROVIDER: ${LLM_PROVIDER:-keyword}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # ฝังตอน build — เปลี่ยนแล้วต้อง docker compose build web ใหม่
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000/api}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -3,12 +3,13 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend test lint clean reset demo-user check-postings postings
+.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
 	@echo "make backend    รัน API ที่พอร์ต 8000 (เอกสารที่ /docs)"
 	@echo "make frontend   รันหน้าเว็บที่พอร์ต 3000"
+	@echo "make prod       รันทั้งระบบโหมด production บนเครื่องนี้ — แผนสำรองวัน Demo Day"
 	@echo "make test       รันเทสต์ทั้งหมด — ต้องเขียวก่อน push เสมอ"
 	@echo "make demo-user  สร้างผู้ใช้ตัวอย่างที่เดินครบเส้นแล้ว (ต้องเปิด make backend ค้างไว้)"
 	@echo "make check-postings  ตรวจประกาศงานที่เก็บมาว่ากรอกถูกรูปแบบไหม"
@@ -47,6 +48,10 @@ backend:
 frontend:
 	@test -d frontend || (echo "ยังไม่มี frontend/ — ดู docs/TEAM.md ว่าใครเป็นเจ้าของ" && exit 1)
 	@cd frontend && npm run dev
+
+# รันจริงแบบที่จะสาธิต — build จริง ปิด hot reload ไม่ต้องใช้ Docker ไม่ต้องใช้เน็ต
+prod:
+	@./scripts/serve-prod.sh
 
 test:
 	@cd backend && .venv/bin/python -m pytest tests/ -q

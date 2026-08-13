@@ -1,0 +1,41 @@
+# API — FastAPI + SQLAlchemy
+#
+#   docker build -f Dockerfile.backend -t siit-roadmap-api .
+#
+# 🔴 context ต้องเป็น root ของ repo ไม่ใช่ backend/
+#    เพราะตอนบูตระบบอ่าน pipeline/out/*.json (ผลของท่อ O*NET) และ data/postings/*.md
+#    ซึ่งอยู่นอกโฟลเดอร์ backend — ดู app/config.py และ app/seed/postings.py
+#
+# ไม่ต้องมี O*NET ต้นฉบับ 106 MB ใน image — ผลของท่ออยู่ใน repo แล้ว (pipeline/out/)
+
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# ลง deps ก่อนคัดลอกซอร์ส — แก้โค้ดแล้วไม่ต้องลงใหม่ทุกครั้ง
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+COPY backend/app ./backend/app
+COPY backend/scripts ./backend/scripts
+COPY pipeline/out ./pipeline/out
+COPY data ./data
+
+WORKDIR /app/backend
+
+# ไม่รันด้วย root
+RUN useradd --create-home --uid 10001 app && chown -R app:app /app
+USER app
+
+EXPOSE 8000
+
+# 🔒 /health รายงานตามจริงว่าโหลดอะไรมาบ้าง — ใช้เป็น healthcheck ได้ตรง ๆ
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health').status==200 else 1)"
+
+# ตารางถูกสร้างและ seed ให้เองตอนบูต (app/main.py lifespan)
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

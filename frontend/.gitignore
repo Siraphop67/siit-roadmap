@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ยกเว้นไฟล์ตัวอย่างที่ไม่มีความลับ — คนใหม่ต้องเห็นว่าต้องตั้งค่าอะไรบ้าง
+!.env.example
 
 # vercel
 .vercel

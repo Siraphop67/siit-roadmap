@@ -21,6 +21,7 @@ from app.models import (
     ActivityItem,
     Base,
     CareerTarget,
+    JobPosting,
     LearningResource,
     ResourceSkill,
     Skill,
@@ -31,6 +32,8 @@ from app.models import (
 )
 from app.seed.activities import ACTIVITY_GROUPS_TH, ACTIVITY_ITEMS, WORK_ACTIVITIES_TH
 from app.seed.careers import CAREER_TARGETS
+from app.seed.postings import load_all as load_postings
+from app.seed.postings import to_row as posting_row
 from app.seed.resources import LEARNING_RESOURCES
 from app.seed.skills import ORDER_FLEXIBLE, SKILL_EDGES, SKILLS
 
@@ -55,6 +58,22 @@ def _onet_index() -> dict[str, dict]:
     if not path.exists():
         return {}
     return {s["id"]: s for s in json.loads(path.read_text(encoding="utf-8"))}
+
+
+def _posting_requirements() -> dict[str, dict[str, dict]]:
+    """ผลของท่อขั้นที่ 2 — target_id → skill_id → แถวที่ยืนยันได้จากประกาศงานจริง
+
+    ไม่มีไฟล์ = ยังไม่ได้รัน `python pipeline/2_extract_postings.py` หรือยังไม่มีประกาศงาน
+    ทั้งสองกรณีระบบต้องเดินต่อได้ด้วยชุดที่ทีมเขียนไว้ และรายงานว่ายังเป็น 0
+    """
+    path = settings.pipeline_out / "posting_requirements.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        target_id: {r["skill_id"]: r for r in t.get("requirements", [])}
+        for target_id, t in data.get("targets", {}).items()
+    }
 
 
 def _activity_profiles() -> dict[str, dict[str, float]]:
@@ -108,6 +127,7 @@ def seed(db: Session) -> dict[str, int]:
 
     # ── อาชีพเป้าหมาย + requirement + โปรไฟล์กิจกรรม ──
     profiles = _activity_profiles()
+    posting_reqs = _posting_requirements()
     for t in CAREER_TARGETS:
         _upsert(db, CareerTarget, t["id"], {
             "id": t["id"], "title_th": t["title_th"], "title_en": t["title_en"],
@@ -119,11 +139,27 @@ def seed(db: Session) -> dict[str, int]:
         })
         db.flush()
 
+        # requirement = ชุดที่ทีมเขียนไว้ **ผสม** กับที่ยืนยันได้จากประกาศงานจริง
+        # ของที่ทีมเขียนไม่ถูกลบเมื่อประกาศไม่ได้พูดถึง เพราะตัวสกัดจับได้เฉพาะคำที่เขียนตรงตัว
+        # (ดูเหตุผลเต็มใน pipeline/2_extract_postings.py)
+        from_postings = posting_reqs.get(t["id"], {})
         db.query(TargetRequirement).filter(TargetRequirement.target_id == t["id"]).delete()
         for skill_id, min_level, importance in t["requirements"]:
+            found = from_postings.get(skill_id)
             db.add(TargetRequirement(
                 target_id=t["id"], skill_id=skill_id, min_level=min_level,
-                importance=importance, appears_in_n_postings=0))
+                importance=importance,
+                appears_in_n_postings=found["appears_in_n_postings"] if found else 0,
+                source="both" if found else "curated"))
+        for skill_id, row in from_postings.items():
+            if any(skill_id == s for s, _, _ in t["requirements"]):
+                continue
+            db.add(TargetRequirement(
+                target_id=t["id"], skill_id=skill_id, min_level=row["min_level"],
+                # ความสำคัญ = สัดส่วนประกาศที่พูดถึงทักษะนี้ · อ่านออกทันทีว่า "7 ใน 9 ประกาศ"
+                importance=row["share"],
+                appears_in_n_postings=row["appears_in_n_postings"],
+                source="postings"))
 
         db.query(TargetActivityProfile).filter(
             TargetActivityProfile.target_id == t["id"]).delete()
@@ -144,6 +180,30 @@ def seed(db: Session) -> dict[str, int]:
         for skill_id, level in r["teaches"]:
             db.add(ResourceSkill(resource_id=r["id"], skill_id=skill_id, reaches_level=level))
 
+    # ── ประกาศงานจริงที่ 🅴 เก็บมา (data/postings/*.md) ──
+    # ยังว่างอยู่จนกว่าจะมีคนเก็บ · ไฟล์ที่ยังผิดรูปแบบจะถูกข้าม ไม่ทำให้ระบบบูตไม่ขึ้น
+    # 🔒 posting_count ของอาชีพนับจากของจริงเท่านั้น ไม่มีไฟล์ = 0 และต้องเป็น 0
+    postings = load_postings(target_ids={t["id"] for t in CAREER_TARGETS})
+    good = [p for p in postings if p.ok]
+    if bad := [p for p in postings if not p.ok]:
+        print(f"[seed] ⚠️  ประกาศงาน {len(bad)} ไฟล์ยังผิดรูปแบบ จึงข้ามไป — ดูด้วย make check-postings")
+    for p in good:
+        _upsert(db, JobPosting, p.id, posting_row(p))
+    db.flush()
+
+    counted: dict[str, int] = {}
+    for p in good:
+        if tid := p.meta.get("target_id"):
+            counted[tid] = counted.get(tid, 0) + 1
+    for t in CAREER_TARGETS:
+        row = db.get(CareerTarget, t["id"])
+        if not row:
+            continue
+        n = counted.get(t["id"], 0)
+        row.posting_count = n
+        # 🔒 กติกาข้อ 5 — สถานะข้อมูลต้องเปลี่ยนตามความจริง ไม่ใช่ค้างที่ placeholder ตลอดกาล
+        row.data_status = "from_postings" if posting_reqs.get(t["id"]) else "placeholder"
+
     db.commit()
     return {
         "skill": len(SKILLS),
@@ -153,6 +213,7 @@ def seed(db: Session) -> dict[str, int]:
         "career_target": len(CAREER_TARGETS),
         "target_requirement": sum(len(t["requirements"]) for t in CAREER_TARGETS),
         "learning_resource": len(LEARNING_RESOURCES),
+        "job_posting": len(good),
     }
 
 

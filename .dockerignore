@@ -1,0 +1,27 @@
+# ของหนักที่ไม่ต้องเข้า image — ทำให้ build เร็วขึ้นมากและ image เล็กลง
+backend/.venv/
+**/node_modules/
+**/.next/
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
+
+# 🔴 O*NET ต้นฉบับ 106 MB — image ใช้แค่ผลของท่อใน pipeline/out/
+pipeline/cache/
+
+# ฐานข้อมูลบนเครื่องคนพัฒนา ห้ามติดเข้า image
+*.db
+*.db-shm
+*.db-wal
+
+# 🔴 ความลับและข้อมูลส่วนบุคคล
+.env
+.env.*
+!.env.example
+data/uploads/
+data/cv/
+
+.git/
+.github/
+docs/
+**/.DS_Store

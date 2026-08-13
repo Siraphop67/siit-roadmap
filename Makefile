@@ -3,13 +3,17 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend test lint clean reset
+.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
 	@echo "make backend    รัน API ที่พอร์ต 8000 (เอกสารที่ /docs)"
 	@echo "make frontend   รันหน้าเว็บที่พอร์ต 3000"
+	@echo "make prod       รันทั้งระบบโหมด production บนเครื่องนี้ — แผนสำรองวัน Demo Day"
 	@echo "make test       รันเทสต์ทั้งหมด — ต้องเขียวก่อน push เสมอ"
+	@echo "make demo-user  สร้างผู้ใช้ตัวอย่างที่เดินครบเส้นแล้ว (ต้องเปิด make backend ค้างไว้)"
+	@echo "make check-postings  ตรวจประกาศงานที่เก็บมาว่ากรอกถูกรูปแบบไหม"
+	@echo "make postings   แปลงประกาศงานที่เก็บมาเป็น requirement (ท่อขั้นที่ 2)"
 	@echo "make pipeline   สร้างข้อมูลจาก O*NET ใหม่"
 	@echo "make reset      ลบฐานข้อมูลแล้ว seed ใหม่"
 
@@ -45,11 +49,32 @@ frontend:
 	@test -d frontend || (echo "ยังไม่มี frontend/ — ดู docs/TEAM.md ว่าใครเป็นเจ้าของ" && exit 1)
 	@cd frontend && npm run dev
 
+# รันจริงแบบที่จะสาธิต — build จริง ปิด hot reload ไม่ต้องใช้ Docker ไม่ต้องใช้เน็ต
+prod:
+	@./scripts/serve-prod.sh
+
 test:
 	@cd backend && .venv/bin/python -m pytest tests/ -q
 
+# ผู้ใช้ตัวอย่างที่ตอบแบบทดสอบ ส่ง CV ยืนยันผลสกัด และเลือกเป้าหมายมาแล้ว
+# สำหรับคนทำหน้าเว็บ จะได้ไม่ต้องเดินทั้งเส้นใหม่ทุกครั้งที่รีเฟรช
+# persona: data (ค่าเริ่มต้น) · hands-on · people   →  make demo-user P=hands-on
+demo-user:
+	@cd backend && .venv/bin/python scripts/demo_user.py --persona $(or $(P),data)
+
+# ด่านตรวจของคนเก็บประกาศงาน — ไม่ต้องเปิด backend ไม่แตะฐานข้อมูล
+check-postings:
+	@cd backend && .venv/bin/python scripts/check_postings.py
+
+# ท่อขั้นที่ 2 — แปลงประกาศงานที่เก็บมาเป็น requirement
+# รันทุกครั้งที่เก็บประกาศเพิ่ม แล้ว make backend อีกรอบ · MIN=1 ตอนยังเก็บได้น้อย
+postings:
+	@$(PY) pipeline/2_extract_postings.py --min-postings $(or $(MIN),2)
+
+# typegen ก่อน tsc เสมอ — Next 16 สร้าง type ของ route/layout ตอน build
+# clone ใหม่ที่ยังไม่เคย build จะเจอ "Cannot find name 'LayoutProps'" ถ้าข้ามขั้นนี้
 lint:
-	@test -d frontend && (cd frontend && npx tsc --noEmit && npx eslint app components lib) || true
+	@test -d frontend && (cd frontend && npx next typegen && npx tsc --noEmit && npx eslint app lib) || true
 
 reset:
 	@rm -f backend/siit_roadmap.db

@@ -39,6 +39,7 @@ from app.models import (
     Consent,
     ExtractedSkill,
     InterestResponse,
+    JobPosting,
     LearnerProfile,
     LearningResource,
     PersonalityResult,
@@ -160,11 +161,19 @@ def health(db: Session = Depends(get_db)) -> dict:
         "skill_edges": db.query(SkillEdge).count(),
         "career_targets": db.query(CareerTarget).count(),
         "learning_resources": db.query(LearningResource).count(),
+        # 🔒 กติกาข้อ 5 — เป็น 0 จนกว่า 🅴 จะเก็บประกาศงานจริง และต้องรายงานว่า 0
+        "job_postings": db.query(JobPosting).count(),
     }
 
 
 @router.get("/meta")
-def meta() -> dict:
+def meta(db: Session = Depends(get_db)) -> dict:
+    """🔒 กติกาข้อ 5 — ข้อความในนี้ขึ้นจอตรง ๆ จึงต้องตรงกับสถานะจริงเสมอ
+
+    หมายเหตุเรื่องข้อมูลคำนวณจากจำนวนประกาศงานที่มีอยู่จริง ไม่ได้เขียนตายตัว
+    ไม่งั้นวันที่ 🅴 เก็บประกาศงานเสร็จ หน้าจอจะยังบอกว่า "ยังไม่มี" อยู่
+    """
+    postings = db.query(JobPosting).count()
     return {
         "fields": FIELDS,
         "education_levels": EDUCATION_LEVELS,
@@ -172,8 +181,14 @@ def meta() -> dict:
         "sectors": SECTORS,
         "resource_kinds": RESOURCE_KIND_TH,
         "extractor": settings.llm_provider,
+        "job_postings": postings,
         "notes": {
-            "data": "อาชีพและ requirement ยังไม่ได้มาจากประกาศงานจริง · วิชาในหลักสูตรยังเป็นชื่อทั่วไป",
+            "data": (
+                "อาชีพและ requirement ยังไม่ได้มาจากประกาศงานจริง · วิชาในหลักสูตรยังเป็นชื่อทั่วไป"
+                if postings == 0 else
+                f"requirement อ้างอิงประกาศงานจริง {postings} ประกาศที่เก็บด้วยมือ "
+                "· วิชาในหลักสูตรยังเป็นชื่อทั่วไป"
+            ),
             "extractor": (
                 "ตัวสกัด CV ตอนนี้ใช้การจับคำสำคัญ ไม่ใช่ LLM — "
                 "จับได้เฉพาะคำที่เขียนตรงตัว"
@@ -258,6 +273,8 @@ def target_detail(target_id: str, db: Session = Depends(get_db)) -> dict:
                 "skill_id": r.skill_id, "name_th": names.get(r.skill_id, r.skill_id),
                 "min_level": r.min_level, "importance": r.importance,
                 "appears_in_n_postings": r.appears_in_n_postings,
+                # 🔒 หน้าจอต้องแยกข้อที่ยืนยันได้จากประกาศจริง ออกจากข้อที่ทีมเขียนเอง
+                "source": r.source,
             }
             for r in reqs
         ],

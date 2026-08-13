@@ -13,7 +13,10 @@ __pycache__/
 # ═══ Node / Next.js ═══
 node_modules/
 .next/
-out/
+# 🔴 ต้องเจาะจงว่า frontend/out/ — เขียน out/ เฉย ๆ จะกลืน pipeline/out/ ไปด้วย
+#    ซึ่งเคยเกิดขึ้นจริง: ผลของท่อ O*NET ไม่เคยเข้า repo สักครั้งทั้งที่คอมเมนต์ข้างล่างบอกว่าเก็บ
+#    ผลคือ clone ใหม่แล้วฝั่ง "ยังไม่รู้" ใช้ไม่ได้เลย และเทสต์ 20 ตัวถูก skip เงียบ ๆ
+frontend/out/
 next-env.d.ts
 *.tsbuildinfo
 

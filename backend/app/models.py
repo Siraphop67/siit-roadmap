@@ -131,6 +131,12 @@ class TargetRequirement(Base):
     importance: Mapped[float] = mapped_column(Float, default=1.0)  # 0–1
     appears_in_n_postings: Mapped[int] = mapped_column(Integer, default=0)
 
+    # requirement ข้อนี้มาจากไหน — 🔒 กติกาข้อ 5 หน้าจอต้องแยกของที่ยืนยันได้ออกจากของที่เราเขียนเอง
+    #   curated  ทีมเขียนเอง ยังไม่พบในประกาศงานจริง
+    #   postings พบในประกาศงานจริง แต่ทีมไม่ได้เขียนไว้
+    #   both     ทั้งสองอย่าง — แข็งแรงที่สุด
+    source: Mapped[str] = mapped_column(String(16), default="curated")
+
     target: Mapped[CareerTarget] = relationship(back_populates="requirements")
 
 

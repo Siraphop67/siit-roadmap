@@ -33,6 +33,7 @@ from app.engine.roadmap import (
 from app.engine.skill_graph import SkillGraph
 from app.ingest import IngestError, from_github, from_linkedin, from_pdf, from_text
 from app.llm import get_extractor
+from app.llm.anthropic import ExtractorError
 from app.models import (
     ActivityResponse,
     CareerTarget,
@@ -363,7 +364,14 @@ def _store_document(db: Session, user_id: str, result, consented: bool) -> dict:
     db.flush()
 
     extractor = get_extractor()
-    spans = extractor.extract(result.raw_text)
+    try:
+        spans = extractor.extract(result.raw_text)
+    except ExtractorError as exc:
+        # 🔒 กติกาข้อ 5 — "เรียกตัวสกัดไม่สำเร็จ" ต้องไม่กลายเป็น "อ่านแล้วไม่เจอทักษะ"
+        #    ไม่งั้นผู้ใช้จะเข้าใจว่าผลงานตัวเองไม่มีอะไรเลย ทั้งที่ระบบเป็นฝ่ายพัง
+        raise HTTPException(
+            502, f"ระบบอ่านเอกสารไม่สำเร็จ ไม่ใช่เพราะผลงานของคุณ — {exc}"
+        ) from exc
     known = {s.id for s in db.scalars(select(Skill)).all()}
     kept = 0
     for s in spans:

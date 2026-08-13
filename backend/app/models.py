@@ -426,7 +426,8 @@ class ActivityResponse(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("app_user.id"))
     item_id: Mapped[str] = mapped_column(ForeignKey("activity_item.id"))
-    answer: Mapped[int] = mapped_column(Integer)  # -1 ไม่อยากทำ · 0 เฉย ๆ · +1 อยากทำ
+    # -2 ไม่อยากทำเลย · -1 ไม่ค่อยอยากทำ · 0 เฉย ๆ · +1 ค่อนข้างอยากทำ · +2 อยากทำมาก
+    answer: Mapped[int] = mapped_column(Integer)
     asked_at_round: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 

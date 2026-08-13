@@ -58,6 +58,7 @@ from app.models import (
     User,
     WorkActivity,
 )
+from app.seed.activities import ANSWER_CHOICES
 from app.seed.careers import SECTORS
 
 router = APIRouter(prefix="/api/discover")
@@ -365,6 +366,7 @@ def next_item(user_id: str, db: Session = Depends(get_db)) -> dict:
                 _card(s, targets, relative, blocked) for s in outcome.ranked[:3]
             ],
             "scale_note": SCALE_NOTE,
+            "compared_count": len(outcome.ranked),
         }
 
     enough = answered >= MIN_ITEMS
@@ -379,6 +381,8 @@ def next_item(user_id: str, db: Session = Depends(get_db)) -> dict:
             "answered": answered,
             "min_items": MIN_ITEMS,
             "max_items": MAX_ITEMS,
+            "can_finish": enough,
+            "answer_choices": ANSWER_CHOICES,
             "item": None,
             "interim": interim,
         }
@@ -399,6 +403,7 @@ def next_item(user_id: str, db: Session = Depends(get_db)) -> dict:
             return {
                 "done": True, "reason": "ตอบครบทุกข้อแล้ว", "answered": answered,
                 "min_items": MIN_ITEMS, "max_items": MAX_ITEMS,
+                "can_finish": enough, "answer_choices": ANSWER_CHOICES,
                 "item": None, "interim": interim,
             }
         activity_id = remaining[0].activity_id
@@ -411,6 +416,10 @@ def next_item(user_id: str, db: Session = Depends(get_db)) -> dict:
         "answered": answered,
         "min_items": MIN_ITEMS,
         "max_items": MAX_ITEMS,
+        # ⭐ ตอบครบขั้นต่ำแล้วต้องออกได้ ไม่ต้องรอให้ระบบบอกว่าจบ
+        "can_finish": enough,
+        # 🔒 ป้ายปุ่มมาจากที่เดียว — หน้าจอห้าม hardcode 5 ระดับเอง
+        "answer_choices": ANSWER_CHOICES,
         "item": _item_payload(item, activity, answered + 1),
         "interim": interim,
     }
@@ -440,8 +449,9 @@ def _widest_spread(
 class AnswerRequest(BaseModel):
     user_id: str
     item_id: str
-    # -1 ไม่อยากทำ · 0 เฉย ๆ · +1 อยากทำ
-    answer: Literal[-1, 0, 1]
+    # สเกล 5 ระดับ — ค่าและถ้อยคำอยู่ที่ `ANSWER_CHOICES` และส่งไปกับ /next ทุกครั้ง
+    # หน้าจอห้าม hardcode ป้าย ให้ใช้ที่ API ส่งมา จะได้ไม่หลุดจากกันเวลาแก้คำ
+    answer: Literal[-2, -1, 0, 1, 2]
     round_no: int = Field(default=1, ge=1)
 
 
@@ -521,6 +531,7 @@ def result(user_id: str, db: Session = Depends(get_db)) -> dict:
             "targets": [],
             "unconsidered": None,
             "unconsidered_note": "",
+            "compared_count": len(outcome.ranked),
             "scale_note": SCALE_NOTE,
             "weights_note": WEIGHTS_NOTE,
             "next_step": "กลับไปตอบแบบทดสอบอีกครั้งที่ /discover/next",
@@ -544,6 +555,9 @@ def result(user_id: str, db: Session = Depends(get_db)) -> dict:
             "อาชีพนี้คะแนนดี แต่ไม่ได้อยู่ในสาขาที่คุณเรียน จึงมักไม่ถูกนึกถึง"
             if unconsidered else ""
         ),
+        # 🔴 จำนวนอาชีพที่เอามาเทียบกันจริง — หน้าจอต้องเขียนได้ว่า "อันดับ 1 จาก 8 อาชีพ"
+        #    ไม่ใช่ "เหมาะกับคุณ 100%" · relative_score ไม่มีความหมายถ้าไม่บอกว่าเทียบกับกี่อัน
+        "compared_count": len(outcome.ranked),
         "scale_note": SCALE_NOTE,
         "weights_note": WEIGHTS_NOTE,
         "next_step": "เลือกอาชีพที่สนใจแล้วไปต่อที่ /goal เพื่อดู roadmap ของอาชีพนั้น",

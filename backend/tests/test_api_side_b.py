@@ -90,6 +90,31 @@ def test_target_detail_shows_requirements_and_admits_missing_data(client):
     )
 
 
+def test_cards_carry_their_top_skills_in_importance_order(client):
+    """ป้ายทักษะบนการ์ด — เรียงตามความสำคัญ ไม่ใช่ตามตัวอักษร"""
+    data = client.get("/api/targets").json()
+    for t in data["targets"]:
+        top = t["top_skills"]
+        assert 0 < len(top) <= 3
+        assert len(top) <= t["requirement_count"]
+        assert [s["importance"] for s in top] == sorted(
+            (s["importance"] for s in top), reverse=True)
+        for s in top:
+            assert s["name_th"], f"{s['skill_id']} ไม่มีชื่อไทย จะไม่เหลืออะไรให้ขึ้นป้าย"
+            # 🔒 กติกาข้อ 5 — ชื่ออังกฤษที่เท่ากับรหัสต้องติดป้ายบอก ห้ามให้หน้าจอเดาเอง
+            assert s["name_en_is_placeholder"] == (s["name_en"] == s["skill_id"])
+
+
+def test_card_top_skills_are_a_subset_of_the_full_requirements(client):
+    """การ์ดกับหน้ารายละเอียดต้องพูดตรงกัน ไม่ใช่คนละชุด"""
+    card = next(t for t in client.get("/api/targets").json()["targets"]
+                if t["id"] == "SW-DEV")
+    detail = client.get("/api/targets/SW-DEV").json()
+    full = {r["skill_id"] for r in detail["requirements"]}
+    assert {s["skill_id"] for s in card["top_skills"]} <= full
+    assert card["requirement_count"] == len(detail["requirements"])
+
+
 def test_scholarship_obligation_filters_targets_with_a_reason(client, user):
     client.post("/api/profile", json={
         "user_id": user, "education_level": "ปี 3", "obligation_id": "gov"})
@@ -259,6 +284,54 @@ def test_having_more_skills_shortens_the_roadmap(client, ready):
     short_one = client.get("/api/roadmap", params={"user_id": ready}).json()
     assert short_one["total_steps"] < long_one["total_steps"]
     assert short_one["coverage"] > long_one["coverage"]
+
+
+# ═══════════ เส้นทางที่เคยเปิดดู ═══════════
+
+
+def test_roadmap_list_is_empty_before_opening_any(client, user):
+    r = client.get("/api/roadmaps", params={"user_id": user}).json()
+    assert r["roadmaps"] == []
+    assert r["empty_message"], "ว่างเปล่าเงียบ ๆ ไม่ได้ ต้องบอกว่าให้ไปทำอะไรต่อ"
+
+
+def test_opening_a_roadmap_puts_it_in_the_list(client, ready):
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    listed = client.get("/api/roadmaps", params={"user_id": ready}).json()["roadmaps"]
+
+    assert len(listed) == 1
+    row = listed[0]
+    assert row["target_id"] == "SW-DEV"
+    assert row["is_primary_goal"], "อาชีพที่ตั้งเป็นเป้าหมายอยู่ต้องถูกทำเครื่องหมาย"
+    assert (row["total_steps"], row["steps_done"], row["coverage"]) == (
+        rm["total_steps"], rm["steps_done"], rm["coverage"])
+
+
+def test_next_step_in_the_list_is_the_step_the_engine_would_hand_over(client, ready):
+    """🔒 กติกาข้อ 4 — ก้าวที่การ์ดโฆษณา ต้องเป็นก้าวเดียวกับที่ระบบจัดอันดับให้"""
+    rm = client.get("/api/roadmap", params={"user_id": ready}).json()
+    row = client.get("/api/roadmaps", params={"user_id": ready}).json()["roadmaps"][0]
+
+    expected = next((s for s in rm["steps"] if s["status"] == "current"), None)
+    if expected is None:
+        assert row["next_step"] is None
+    else:
+        assert row["next_step"]["skill_id"] == expected["skill_id"]
+        assert row["next_step"]["name_th"] == expected["name_th"]
+
+
+def test_second_career_is_listed_without_stealing_the_primary_goal(client, ready):
+    client.get("/api/roadmap", params={"user_id": ready})
+    client.get("/api/roadmap", params={"user_id": ready, "target_id": "DATA-ENG"})
+
+    listed = client.get("/api/roadmaps", params={"user_id": ready}).json()["roadmaps"]
+    assert [r["target_id"] for r in listed] == ["DATA-ENG", "SW-DEV"], "ล่าสุดต้องมาก่อน"
+    # 🔴 แค่เปิดดูอาชีพอื่นไม่ใช่การเปลี่ยนเป้าหมาย — เป้าหมายเปลี่ยนที่ /goal เท่านั้น
+    assert [r["is_primary_goal"] for r in listed] == [False, True]
+
+
+def test_roadmap_list_refuses_an_unknown_user(client):
+    assert client.get("/api/roadmaps", params={"user_id": "ไม่มีคนนี้"}).status_code == 404
 
 
 # ═══════════ PDPA ═══════════

@@ -108,6 +108,54 @@ def test_ไม่พบผู้ใช้ตอบ404(client):
     assert client.get("/api/discover/next", params={"user_id": "ไม่มีจริง"}).status_code == 404
 
 
+# ═════════════ สเกลคำตอบ 5 ระดับ (DECISIONS D15) ═════════════
+
+
+def test_ใช้ได้ครบทั้งห้าระดับ(client, user):
+    for value in (-2, -1, 0, 1, 2):
+        item = client.get("/api/discover/next", params={"user_id": user}).json()["item"]
+        r = client.post("/api/discover/answer", json={
+            "user_id": user, "item_id": item["item_id"], "answer": value})
+        assert r.status_code == 200, f"ระดับ {value} ต้องตอบได้ — {r.text}"
+
+
+def test_ค่านอกสเกลถูกปฏิเสธ(client, user):
+    item = client.get("/api/discover/next", params={"user_id": user}).json()["item"]
+    for value in (-3, 3):
+        r = client.post("/api/discover/answer", json={
+            "user_id": user, "item_id": item["item_id"], "answer": value})
+        assert r.status_code == 422, "ค่านอกสเกลต้องไม่ถูกบันทึกเงียบ ๆ"
+
+
+def test_ป้ายปุ่มมาจากapiไม่ใช่หน้าจอ(client, user):
+    """🔒 ถ้าหน้าจอ hardcode ป้ายเอง วันที่แก้คำที่ seed ป้ายกับค่าจะหลุดจากกัน"""
+    body = client.get("/api/discover/next", params={"user_id": user}).json()
+    choices = body["answer_choices"]
+    assert [c["value"] for c in choices] == [-2, -1, 0, 1, 2], "ต้องเรียงลบไปบวกตามลำดับปุ่ม"
+    assert all(c["label_th"] for c in choices)
+    # ทุกค่าที่ API โฆษณาว่าตอบได้ ต้องตอบได้จริง
+    for c in choices:
+        item = client.get("/api/discover/next", params={"user_id": user}).json()["item"]
+        assert client.post("/api/discover/answer", json={
+            "user_id": user, "item_id": item["item_id"], "answer": c["value"]}).status_code == 200
+
+
+def test_ตอบครบขั้นต่ำแล้วต้องออกได้เอง(client, user):
+    """⭐ แบบทดสอบ adaptive ไม่มี "ข้อที่ 1 จาก 41" — ปุ่มดูผลต้องขึ้นเองเมื่อพอแล้ว"""
+    seen_locked, seen_open = False, False
+    for _ in range(MIN_ITEMS + 1):      # +1 เพราะเช็คก่อนตอบ ข้อสุดท้ายจึงต้องมีรอบตรวจของมัน
+        body = client.get("/api/discover/next", params={"user_id": user}).json()
+        assert body["can_finish"] == (body["answered"] >= MIN_ITEMS)
+        seen_locked |= not body["can_finish"]
+        seen_open |= body["can_finish"]
+        if body["done"]:
+            break
+        client.post("/api/discover/answer", json={
+            "user_id": user, "item_id": body["item"]["item_id"], "answer": 2})
+    assert seen_locked, "ตอบไม่ถึงขั้นต่ำต้องยังกดดูผลไม่ได้"
+    assert seen_open, "ตอบครบขั้นต่ำแล้วต้องกดดูผลได้"
+
+
 # ═════════════ 🔴 คะแนนดิบห้ามหลุดออกไป ═════════════
 
 
@@ -122,6 +170,8 @@ def test_ไม่มีคะแนนดิบในผลลัพธ์(clie
 
     assert body["scale_note"], "ส่งตัวเลขออกไปต้องมีคำกำกับว่ามันคืออะไรเสมอ"
     assert "ไม่ใช่เปอร์เซ็นต์" in body["scale_note"]
+    # 🔴 "อันดับ 1 ได้ 100" ไม่มีความหมายถ้าไม่บอกว่าเทียบกับกี่อาชีพ (DECISIONS D14)
+    assert body["compared_count"] >= len(body["targets"])
 
 
 def test_คะแนนสัมพัทธ์เรียงตามอันดับ(client, user):

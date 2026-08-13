@@ -3,7 +3,7 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings try-extractor
+.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings design-content try-extractor answer-scale
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
@@ -12,6 +12,7 @@ help:
 	@echo "make prod       รันทั้งระบบโหมด production บนเครื่องนี้ — แผนสำรองวัน Demo Day"
 	@echo "make test       รันเทสต์ทั้งหมด — ต้องเขียวก่อน push เสมอ"
 	@echo "make demo-user  สร้างผู้ใช้ตัวอย่างที่เดินครบเส้นแล้ว (ต้องเปิด make backend ค้างไว้)"
+	@echo "make design-content  ดึงข้อความจริงทุกหน้าจอให้คนออกแบบ → docs/DESIGN-CONTENT.md"
 	@echo "make check-postings  ตรวจประกาศงานที่เก็บมาว่ากรอกถูกรูปแบบไหม"
 	@echo "make postings   แปลงประกาศงานที่เก็บมาเป็น requirement (ท่อขั้นที่ 2)"
 	@echo "make try-extractor  ลองตัวสกัดกับ CV จริง — P=local M=รุ่น CV=ไฟล์"
@@ -62,6 +63,14 @@ test:
 # persona: data (ค่าเริ่มต้น) · hands-on · people   →  make demo-user P=hands-on
 demo-user:
 	@cd backend && .venv/bin/python scripts/demo_user.py --persona $(or $(P),data)
+
+# ข้อความจริงทุกหน้าจอสำหรับคนออกแบบ — ต้องเปิด make backend ค้างไว้
+design-content:
+	@cd backend && .venv/bin/python scripts/design_content.py
+
+# หลักฐานของ DECISIONS D15 — สเกลคำตอบ 3 ระดับกับ 5 ระดับ อันไหนแยกอาชีพได้ดีกว่า
+answer-scale:
+	@cd backend && .venv/bin/python scripts/answer_scale_check.py
 
 # ด่านตรวจของคนเก็บประกาศงาน — ไม่ต้องเปิด backend ไม่แตะฐานข้อมูล
 check-postings:

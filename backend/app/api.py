@@ -8,6 +8,7 @@
   ตรวจผลสกัด       GET  /portfolio/{id} · POST /portfolio/{id}/confirm
   เลือกเป้าหมาย     POST /goal
   ★ ROADMAP ★     GET  /roadmap
+  เส้นทางของฉัน     GET  /roadmaps
   ข้อมูลของฉัน      GET  /me · DELETE /me
 """
 
@@ -62,6 +63,9 @@ from app.seed.skills import ORDER_FLEXIBLE
 
 router = APIRouter(prefix="/api")
 
+# ทักษะเด่นที่ติดไปกับการ์ดอาชีพ — มากกว่านี้การ์ดจะยาวจนอ่านไม่ออกบนมือถือ
+TOP_SKILLS_ON_CARD = 3
+
 RESOURCE_KIND_TH = {
     "siit_course": "วิชาในหลักสูตร",
     "online_course": "คอร์สออนไลน์",
@@ -113,6 +117,34 @@ def _requirements(db: Session, target_id: str) -> list[Requirement]:
         select(TargetRequirement).where(TargetRequirement.target_id == target_id)).all()
     return [Requirement(r.skill_id, r.min_level, r.importance, r.appears_in_n_postings)
             for r in rows]
+
+
+def _requirements_by_target(db: Session) -> dict[str, list[dict]]:
+    """requirement ของทุกอาชีพ เรียงตามความสำคัญ — คิวรีเดียวสำหรับทั้งหน้าคลังอาชีพ
+
+    การ์ดหนึ่งใบต้องการทั้งจำนวนข้อและทักษะเด่นไม่กี่ตัว ถ้าแยกคิวรีต่อการ์ด
+    จะยิงถี่ขึ้นทุกครั้งที่เพิ่มอาชีพใหม่
+    """
+    out: dict[str, list[dict]] = {}
+    rows = db.execute(
+        select(TargetRequirement, Skill)
+        .join(Skill, Skill.id == TargetRequirement.skill_id)
+        .order_by(TargetRequirement.importance.desc(), TargetRequirement.skill_id)
+    ).all()
+    for r, s in rows:
+        out.setdefault(r.target_id, []).append({
+            "skill_id": s.id,
+            "name_th": s.name_th,
+            "name_en": s.name_en,
+            # 🔒 กติกาข้อ 5 — ทักษะที่ไม่มีตัวตรงใน O*NET ชื่ออังกฤษจะเท่ากับรหัส
+            #    หน้าจอต้องรู้ว่าห้ามเอาขึ้นเป็นป้ายชื่อ (เหมือนที่ /api/skills ทำ)
+            "name_en_is_placeholder": s.name_en == s.id,
+            "min_level": r.min_level,
+            "importance": r.importance,
+            "appears_in_n_postings": r.appears_in_n_postings,
+            "source": r.source,
+        })
+    return out
 
 
 def _confirmed_skills(db: Session, user_id: str) -> dict[str, int]:
@@ -223,15 +255,19 @@ def list_targets(user_id: str | None = None, db: Session = Depends(get_db)) -> d
     by_id = {t.id: t for t in targets}
     profile = _profile_input(db, user_id)[0] if user_id else ProfileInput()
     kept, removed = filter_targets(profile, [_target_input(t) for t in targets])
+    requirements = _requirements_by_target(db)
 
     def card(t: CareerTarget, verdict) -> dict:
+        reqs = requirements.get(t.id, [])
         return {
             "id": t.id, "title_th": t.title_th, "title_en": t.title_en,
             "summary": t.summary, "sector": t.sector,
             "sector_label": SECTORS.get(t.sector, t.sector),
             "field_whitelist": t.field_whitelist,
-            "requirement_count": db.query(TargetRequirement).filter(
-                TargetRequirement.target_id == t.id).count(),
+            "requirement_count": len(reqs),
+            # ทักษะเด่นไว้ทำป้ายบนการ์ด — เรียงตามความสำคัญ ไม่ใช่ตามตัวอักษร
+            # ใครอยากได้ครบทุกข้อให้เรียก /targets/{id}
+            "top_skills": reqs[:TOP_SKILLS_ON_CARD],
             "posting_count": t.posting_count,
             "data_status": t.data_status,
             "conditions_at_application": [
@@ -629,6 +665,72 @@ def _persist_roadmap(db: Session, user_id: str, rm) -> None:
                 fits_time=o.fits_time, fits_budget=o.fits_budget, fits_year=o.fits_year,
                 blocked_reason=o.blocked_reason))
     db.commit()
+
+
+@router.get("/roadmaps")
+def list_roadmaps(user_id: str, db: Session = Depends(get_db)) -> dict:
+    """เส้นทางที่ผู้ใช้เคยเปิดดู — เมนู "เส้นทางของฉัน" กับ "ประวัติ" ใช้รายการเดียวกัน
+
+    🔴 ระบบไม่มีปุ่ม "บันทึก" แยกต่างหาก
+       ทุกครั้งที่เรียก /roadmap ระบบเก็บผลไว้ 1 แถวต่อ 1 อาชีพอยู่แล้ว (`_persist_roadmap`)
+       รายการนี้จึงคือ *ทุกอาชีพที่เคยเปิดดู* เรียงจากล่าสุด — ไม่ใช่สิ่งที่ผู้ใช้เลือกเก็บ
+       หน้าจอจึงห้ามเขียนว่า "บันทึกแล้ว" · ถ้าอยากได้ปุ่มบันทึกที่แยกจากประวัติจริง ๆ
+       ต้องเพิ่มคอลัมน์ในตาราง roadmap ก่อน แล้วค่อยแยกสองเมนูนี้ออกจากกัน
+
+    `computed_at` คือเวลาที่คำนวณครั้งล่าสุด ไม่ใช่เวลาที่เปิดครั้งแรก —
+    เพราะ `_persist_roadmap` ลบแถวเดิมแล้วเขียนใหม่ทุกครั้งที่ทักษะหรือโปรไฟล์เปลี่ยน
+    """
+    _user(db, user_id)
+    rows = db.scalars(
+        select(Roadmap).where(Roadmap.user_id == user_id)
+        .order_by(Roadmap.computed_at.desc())).all()
+    if not rows:
+        return {
+            "roadmaps": [],
+            "empty_message": "ยังไม่เคยเปิด roadmap ของอาชีพไหน — เลือกอาชีพสักอันก่อน",
+            "note": "",
+        }
+
+    names = _skill_names(db)
+    primary = db.scalar(select(UserGoal).where(
+        UserGoal.user_id == user_id, UserGoal.is_primary.is_(True)))
+    steps = db.scalars(
+        select(RoadmapStep)
+        .where(RoadmapStep.roadmap_id.in_([r.id for r in rows]))
+        .order_by(RoadmapStep.order_no)).all()
+
+    # ก้าวถัดไปที่ลงมือได้ของแต่ละเส้น — การ์ดในรายการจะได้มีเนื้อ ไม่ใช่มีแต่เปอร์เซ็นต์
+    next_step: dict[str, RoadmapStep] = {}
+    for s in steps:
+        if s.status == "current" and s.roadmap_id not in next_step:
+            next_step[s.roadmap_id] = s
+
+    out = []
+    for r in rows:
+        target = db.get(CareerTarget, r.target_id)
+        nxt = next_step.get(r.id)
+        out.append({
+            "target_id": r.target_id,
+            "title_th": target.title_th if target else r.target_id,
+            "title_en": target.title_en if target else "",
+            "data_status": target.data_status if target else None,
+            "total_steps": r.total_steps,
+            "steps_done": r.steps_done,
+            "coverage": r.coverage,
+            "computed_at": r.computed_at.isoformat(),
+            # อันที่ตั้งเป็นเป้าหมายอยู่ตอนนี้ — /roadmap ที่ไม่ระบุ target จะใช้อันนี้
+            "is_primary_goal": bool(primary and primary.target_id == r.target_id),
+            "next_step": (
+                {"skill_id": nxt.skill_id, "name_th": names.get(nxt.skill_id, nxt.skill_id)}
+                if nxt else None
+            ),
+        })
+
+    return {
+        "roadmaps": out,
+        "empty_message": "",
+        "note": "รายการนี้คืออาชีพที่เคยเปิดดู ไม่ใช่รายการที่กดบันทึกไว้",
+    }
 
 
 # ═════════════════════ ข้อมูลของฉัน + PDPA ═════════════════════

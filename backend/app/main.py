@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import router
 from app.api_discover import router as discover_router
 from app.api_employer import router as employer_router
+from app.api_skills import router as skills_router
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.seed.loader import check_pipeline, create_all, seed
@@ -54,6 +55,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(discover_router)
 app.include_router(employer_router)
+app.include_router(skills_router)
 
 
 @app.get("/")

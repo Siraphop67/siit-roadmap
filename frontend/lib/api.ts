@@ -1,5 +1,6 @@
 /**
- * สัญญาระหว่างหน้าเว็บกับ API — endpoint ทั้ง 17 ตัวของ `backend/app/api.py`
+ * สัญญาระหว่างหน้าเว็บกับ API — `backend/app/api.py` · `api_discover.py`
+ * `api_employer.py` · `api_skills.py`
  *
  * ทุกหน้าเรียกผ่านไฟล์นี้ไฟล์เดียว ห้ามยิง fetch ตรงจากหน้าจอ
  * เพราะถ้ารูปร่าง response เปลี่ยน เราอยากให้ TypeScript แดงที่เดียว ไม่ใช่ค่อย ๆ พังตอนรัน
@@ -73,6 +74,11 @@ export type TargetCard = {
   sector_label: string;
   field_whitelist: string[];
   requirement_count: number;
+  /**
+   * ทักษะเด่นไม่เกิน 3 ตัว เรียงตาม `importance` มาแล้ว — ใช้ทำป้ายบนการ์ด
+   * อยากได้ครบทุกข้อต้องเรียก `api.target(id)` · อย่าเรียงใหม่เอง ลำดับนี้มาจากเครื่องยนต์
+   */
+  top_skills: TopSkill[];
   /** 🔴 เป็น 0 ทุกอาชีพจนกว่าจะเก็บประกาศงานจริง (DECISIONS D11) */
   posting_count: number;
   data_status: string;
@@ -99,6 +105,18 @@ export type TargetRequirementView = {
    * `curated` ทีมเขียนเอง · `postings` พบในประกาศจริง · `both` ทั้งคู่ (แข็งแรงที่สุด)
    */
   source: "curated" | "postings" | "both";
+};
+
+/**
+ * requirement หนึ่งข้อ + ชื่ออังกฤษ — ใช้บนป้ายที่มีที่ว่างน้อย
+ *
+ * 🔴 `name_th` ของทักษะเป็นประโยคเต็ม ("เขียน SQL ดึงและรวมข้อมูลจากฐานข้อมูล")
+ *    ไม่ใช่ชื่อสั้น · ป้ายเล็ก ๆ ควรใช้ `name_en` แต่ต้องเช็ค `name_en_is_placeholder` ก่อน
+ */
+export type TopSkill = TargetRequirementView & {
+  name_en: string;
+  /** true = ทักษะนี้ไม่มีตัวตรงใน O*NET ค่า `name_en` จึงเท่ากับ skill_id ห้ามเอาขึ้นจอ */
+  name_en_is_placeholder: boolean;
 };
 
 export type TargetDetail = {
@@ -252,6 +270,139 @@ export type RoadmapResponse = {
   /** วาดเป็นกราฟก็ได้ · ถ้าวาดเป็นรายการให้ใช้ `order_no` แทน */
   edges: { from: string; to: string }[];
   legend: Record<StepStatus, string>;
+};
+
+/**
+ * เส้นทางที่ผู้ใช้เคยเปิดดู — เมนู "เส้นทางของฉัน" กับ "ประวัติ" ใช้รายการเดียวกัน
+ *
+ * 🔴 ไม่มีปุ่ม "บันทึก" ในระบบ · ทุกครั้งที่เรียก `api.roadmap()` ระบบเก็บผลไว้เองอยู่แล้ว
+ *    รายการนี้จึงคือ *ทุกอาชีพที่เคยเปิดดู* ไม่ใช่สิ่งที่ผู้ใช้เลือกเก็บ
+ *    หน้าจอห้ามเขียนว่า "บันทึกแล้ว" — ถ้าอยากได้ปุ่มบันทึกจริงต้องให้ 🅳 เพิ่มคอลัมน์ก่อน
+ */
+export type RoadmapListItem = {
+  target_id: string;
+  title_th: string;
+  title_en: string;
+  data_status: string | null;
+  total_steps: number;
+  steps_done: number;
+  coverage: number;
+  /** 🔴 เวลา UTC ไม่มี offset ต่อท้าย (เหมือน `uploaded_at` ใน MeResponse) — ต้อง +7 เอง */
+  computed_at: string;
+  /** เป้าหมายหลักที่ตั้งไว้ตอนนี้ · เปิดดูอาชีพอื่นไม่ได้เปลี่ยนค่านี้ ต้องเรียก `api.setGoal` */
+  is_primary_goal: boolean;
+  /** 🔒 กติกาข้อ 4 — ก้าวเดียวกับที่ระบบจัดอันดับให้ในหน้า roadmap ใช้ค่านี้ อย่าคำนวณเอง */
+  next_step: { skill_id: string; name_th: string } | null;
+};
+
+export type RoadmapListResponse = {
+  roadmaps: RoadmapListItem[];
+  /** ไม่ว่าง = `roadmaps` ว่าง และนี่คือข้อความที่ต้องขึ้นจอ ห้ามโชว์รายการเปล่าเงียบ ๆ */
+  empty_message: string;
+  note: string;
+};
+
+// ══════════════════════ กราฟทักษะ ══════════════════════
+//
+// กราฟทั้งใบ 73 ทักษะ · ต่างจาก `edges` ใน RoadmapResponse ที่เป็น subgraph ของอาชีพเดียว
+// 🔴 API ส่งกราฟเต็มเสมอ ไม่มีตัวกรองฝั่ง server — กรองบนหน้าจอเอา (73 node เล็กพอ)
+
+/** หมวดของทักษะ เช่น `foundation` `tool` `software` — ชื่อไทยมาใน `SkillGraph.categories` */
+export type SkillCategory = string;
+
+export type SkillRef = {
+  id: string;
+  name_en: string;
+  name_th: string | null;
+  category: SkillCategory;
+  category_th: string;
+  /** true = `name_en` เท่ากับ id เพราะทักษะนี้ไม่มีตัวตรงใน O*NET — ใช้ `name_th` แทน */
+  name_en_is_placeholder: boolean;
+};
+
+export type SkillNode = SkillRef & {
+  source: "onet" | "market" | "manual";
+  source_th: string;
+  /** false = ทำเมื่อไหร่ก็ได้ ไม่ต้องรอ prerequisite */
+  order_strict: boolean;
+  prereq_count: number;
+  unlock_count: number;
+  career_count: number;
+  resource_count: number;
+  /**
+   * 🔒 กติกาข้อ 1 — สองค่านี้แยกกันเสมอ ห้ามรวมเป็นตัวเลขเดียวบนหน้าจอ
+   * null = ยังไม่มีหลักฐานทางนั้น · ที่ยืนยันจาก CV กับที่กรอกเองต้องดูออกว่าต่างกัน
+   */
+  level_from_cv: number | null;
+  level_self_reported: number | null;
+};
+
+export type SkillGraph = {
+  nodes: SkillNode[];
+  edges: { from: string; to: string; reviewed_by_human: boolean }[];
+  /** ใช้ทำ legend — `count` บวกกันได้เท่าจำนวน node พอดี */
+  categories: { id: SkillCategory; label_th: string; count: number }[];
+  counts: { skills: number; edges: number; roots: number };
+  /** null = เรียกแบบไม่ส่ง userId */
+  you: { from_cv: number; self_reported: number } | null;
+  /** 🔒 ข้อจำกัดตามจริง — `labels` ไม่ว่างเมื่อมีทักษะที่ยังไม่มีชื่ออังกฤษ เอาขึ้นจอได้ */
+  notes: { labels: string; edges: string };
+};
+
+export type SkillCareerLink = {
+  target_id: string;
+  title_th: string;
+  title_en: string;
+  sector_label: string;
+  min_level: number;
+  importance: number;
+  appears_in_n_postings: number;
+  source: "curated" | "postings" | "both";
+};
+
+export type SkillResource = {
+  id: string;
+  kind: ResourceKind;
+  kind_label: string;
+  title: string;
+  provider: string | null;
+  url: string | null;
+  est_hours: number | null;
+  cost_baht: number | null;
+  min_year: number | null;
+  proof_of_done: string | null;
+  /** เรียนอันนี้จบแล้วไปถึงระดับไหน (1–3) */
+  reaches_level: number;
+  /** 🔴 "placeholder" = ชื่อทั่วไป ยังไม่ใช่วิชาหรือคอร์สจริงที่เปิดสอนอยู่ */
+  data_status: string;
+};
+
+export type SkillDetail = SkillRef & {
+  description: string | null;
+  source: "onet" | "market" | "manual";
+  source_th: string;
+  onet_element_id: string | null;
+  order_strict: boolean;
+  prereqs: SkillRef[];
+  unlocks: SkillRef[];
+  /** ⭐ ได้ทักษะนี้แล้วเปิดทางไปอีกกี่ตัว (นับต่อเนื่องทั้งสาย) — ใช้บอกว่าคุ้มลงแรงแค่ไหน */
+  unlocks_total: number;
+  supported_careers: SkillCareerLink[];
+  resources: SkillResource[];
+  /** null = เรียกแบบไม่ส่ง userId · `evidence` คือ span จริงใน CV (กติกาข้อ 2) */
+  you: {
+    level_from_cv: number | null;
+    level_self_reported: number | null;
+    evidence: {
+      document_id: string;
+      span_start: number;
+      span_end: number;
+      span_text: string;
+      level: number;
+      confidence: number;
+    }[];
+  } | null;
+  notes: { careers: string; resources: string };
 };
 
 // ══════════════ ฝั่ง "ยังไม่รู้ว่าอยากเป็นอะไร" ══════════════
@@ -650,6 +801,17 @@ export const api = {
   /** ไม่ส่ง targetId = ใช้เป้าหมายหลักที่ตั้งไว้ · ยังไม่เคยตั้ง → ApiError status 409 */
   roadmap: (userId: string, targetId?: string | null) =>
     call<RoadmapResponse>(`/roadmap${q({ user_id: userId, target_id: targetId })}`),
+
+  /** อาชีพที่เคยเปิด roadmap แล้ว เรียงจากล่าสุด — ไม่ใช่รายการที่กดบันทึกไว้ */
+  roadmaps: (userId: string) =>
+    call<RoadmapListResponse>(`/roadmaps${q({ user_id: userId })}`),
+
+  // ── กราฟทักษะ ──
+  /** ส่ง userId ถ้ามี — จะได้รู้ว่า node ไหนผู้ใช้มีแล้ว · ไม่ส่งก็ดูกราฟได้ */
+  skills: (userId?: string | null) => call<SkillGraph>(`/skills${q({ user_id: userId })}`),
+
+  skill: (skillId: string, userId?: string | null) =>
+    call<SkillDetail>(`/skills/${encodeURIComponent(skillId)}${q({ user_id: userId })}`),
 
   // ── ข้อมูลของฉัน + PDPA ──
   me: (userId: string) => call<MeResponse>(`/me${q({ user_id: userId })}`),

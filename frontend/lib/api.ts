@@ -416,8 +416,16 @@ export type DiscoverItem = {
   group_th: string | null;
 };
 
-/** -1 ไม่อยากทำ · 0 เฉย ๆ · +1 อยากทำ */
-export type ActivityAnswer = -1 | 0 | 1;
+/**
+ * สเกล 5 ระดับ (DECISIONS D15) — -2 ไม่อยากทำเลย · 0 เฉย ๆ · +2 อยากทำมาก
+ *
+ * 🔴 ความแรงมีผลกับการจับคู่จริง ไม่ได้ใส่ไว้ให้สวย · ตอบ ±1 ล้วนทำให้ทุกข้อน้ำหนักเท่ากัน
+ *    แล้ววัดแล้วว่าอาชีพกลาง ๆ (ข้อมูล · หุ่นยนต์ · กระบวนการผลิต) จะแยกไม่ออก
+ * 🔒 ป้ายของแต่ละระดับมากับ `DiscoverNext.answer_choices` — อย่า hardcode บนหน้าจอ
+ */
+export type ActivityAnswer = -2 | -1 | 0 | 1 | 2;
+
+export type AnswerChoice = { value: ActivityAnswer; label_th: string };
 
 export type MatchReason = {
   kind: "activity" | "extracted_skill" | "self_reported_skill" | "values";
@@ -468,8 +476,20 @@ export type DiscoverNext = {
   min_items: number;
   max_items: number;
   item: DiscoverItem | null;
+  /**
+   * ⭐ ตอบครบ `min_items` แล้ว — ต้องมีปุ่ม "ดูผลเลย" ให้กด ไม่ใช่บังคับตอบจนระบบพอใจ
+   * แบบทดสอบนี้ไม่มี "ข้อที่ 1 จาก 41" · ความยาวขึ้นกับว่าแยกอาชีพออกเมื่อไหร่ (D16)
+   */
+  can_finish: boolean;
+  /** 🔒 ป้ายปุ่มทั้ง 5 ระดับ — ใช้ตัวนี้เสมอ ถ้า hardcode วันที่แก้คำจะหลุดจากค่าที่ส่งกลับ */
+  answer_choices: AnswerChoice[];
   /** ⭐ โผล่ทุก 6 ข้อ — ให้ผู้ใช้เห็นว่ากำลังไปทางไหนระหว่างทำ ไม่ต้องรอจบ */
-  interim: { separated: boolean; top: MatchCard[]; scale_note: string } | null;
+  interim: {
+    separated: boolean;
+    top: MatchCard[];
+    scale_note: string;
+    compared_count: number;
+  } | null;
 };
 
 export type AnswerResult = {
@@ -490,6 +510,11 @@ export type DiscoverResult = {
   targets: MatchCard[];
   unconsidered: MatchCard | null;
   unconsidered_note: string;
+  /**
+   * 🔴 จำนวนอาชีพที่เอามาเทียบกันจริง — ต้องขึ้นจอคู่กับ `relative_score` เสมอ
+   * เขียนว่า "อันดับ 1 จาก 8 อาชีพ" ได้ · เขียนว่า "เหมาะกับคุณ 100%" ไม่ได้ (D14)
+   */
+  compared_count: number;
   scale_note: string;
   weights_note: string;
   next_step: string;

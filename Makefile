@@ -3,7 +3,7 @@ PIP     := backend/.venv/bin/pip
 PYTHON  ?= /opt/homebrew/opt/python@3.13/bin/python3.13
 ONET_URL := https://www.onetcenter.org/dl_files/database/db_29_1_text.zip
 
-.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings design-content try-extractor
+.PHONY: help setup venv deps onet pipeline backend frontend prod test lint clean reset demo-user check-postings postings design-content try-extractor answer-scale
 
 help:
 	@echo "make setup      ตั้งเครื่องครั้งแรก — venv + deps + O*NET + ท่อข้อมูล"
@@ -67,6 +67,10 @@ demo-user:
 # ข้อความจริงทุกหน้าจอสำหรับคนออกแบบ — ต้องเปิด make backend ค้างไว้
 design-content:
 	@cd backend && .venv/bin/python scripts/design_content.py
+
+# หลักฐานของ DECISIONS D15 — สเกลคำตอบ 3 ระดับกับ 5 ระดับ อันไหนแยกอาชีพได้ดีกว่า
+answer-scale:
+	@cd backend && .venv/bin/python scripts/answer_scale_check.py
 
 # ด่านตรวจของคนเก็บประกาศงาน — ไม่ต้องเปิด backend ไม่แตะฐานข้อมูล
 check-postings:

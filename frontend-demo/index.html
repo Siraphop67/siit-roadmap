@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>[ชื่อระบบ]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#0FBE6E; --g-dark:#056B3C; --g-soft:#E6F9F0; --g-soft2:#C9F2DE;
+  --ink:#0C1712; --grey:#55635C; --white:#fff; --line:#DFE7E2; --stop:#B3271C; --stop-soft:#FCEBE9;
+  --th:'IBM Plex Sans Thai',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--white);color:var(--ink);font-family:var(--th);font-size:17px;line-height:1.8;letter-spacing:0;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+h1,h2,h3{font-weight:600;letter-spacing:0;line-height:1.34}
+h1{font-size:clamp(36px,8vw,80px);font-weight:700}
+h2{font-size:clamp(26px,5.4vw,46px);font-weight:700}
+h3{font-size:clamp(19px,2.6vw,23px)}
+.lead{font-size:clamp(17px,2.1vw,21px);line-height:1.72;color:var(--grey)}
+.body{font-size:17px;line-height:1.8;color:var(--grey)}
+.small{font-size:15px;line-height:1.7;color:var(--grey)}
+.mono{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:var(--grey)}
+.up{text-transform:uppercase}
+.huge{font-family:var(--mono);font-size:clamp(60px,15vw,170px);font-weight:500;line-height:.94;letter-spacing:-.02em}
+a{color:var(--g-dark)}
+
+.btn{font-family:var(--th);font-size:16.5px;font-weight:600;padding:14px 28px;border:0;border-radius:100px;cursor:pointer;
+  background:var(--ink);color:#fff;display:inline-block;transition:transform .14s cubic-bezier(.2,.9,.3,1),box-shadow .14s,background .14s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(12,23,18,.2)}
+.btn:active{transform:none}
+.btn-g{background:var(--g);color:var(--ink)}
+.btn-w{background:#fff;color:var(--ink)}
+.btn-line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.btn-line:hover{background:var(--ink);color:#fff}
+.btn-sm{padding:10px 20px;font-size:15px}
+.btn-block{display:block;width:100%}
+.btn[disabled]{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--g);outline-offset:3px}
+
+/* ═══ LANDING ═══ */
+#landing section{padding:clamp(64px,10vw,140px) 0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.narrow{max-width:720px}
+.green{background:var(--g)}.soft{background:var(--g-soft)}
+.dark{background:var(--ink);color:#fff}.dark .body,.dark .small,.dark .mono{color:#A9BCB2}
+.lnav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:13px 24px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+.lnav.stuck{border-bottom-color:var(--line)}
+.hero{padding-top:118px!important;padding-bottom:0!important}
+.heroimg{margin-top:clamp(34px,5vw,64px);border-radius:26px;overflow:hidden;position:relative;background:var(--g-soft)}
+.heroimg img{width:100%;height:clamp(280px,48vw,520px);object-fit:cover;object-position:center 38%}
+.heroimg .badge{position:absolute;left:18px;bottom:18px;background:var(--g);color:var(--ink);border-radius:100px;
+  padding:10px 18px;font-weight:600;font-size:15px;display:flex;align-items:center;gap:9px}
+.heroimg .badge i{width:9px;height:9px;border-radius:50%;background:var(--ink);animation:blip 1.7s ease-in-out infinite}
+@keyframes blip{50%{opacity:.25}}
+.two{display:grid;gap:clamp(24px,4vw,50px)}
+@media(min-width:760px){.two{grid-template-columns:1fr 1fr;align-items:end}}
+.bar{height:15px;border-radius:100px;background:rgba(12,23,18,.10);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:100px;background:var(--ink);transition:width 1.1s cubic-bezier(.2,.9,.3,1)}
+.bar.pale i{background:rgba(12,23,18,.32)}
+.hows{display:grid;gap:clamp(28px,4vw,42px)}
+@media(min-width:800px){.hows{grid-template-columns:repeat(3,1fr)}}
+.hown{width:44px;height:44px;border-radius:50%;background:var(--g);display:grid;place-items:center;
+  font-family:var(--mono);font-size:16px;margin-bottom:16px}
+/* ═══ photography ═══ */
+.ph{border-radius:18px;overflow:hidden;background:var(--g-soft);position:relative}
+.ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.2,.9,.3,1)}
+.ph.duo img{filter:grayscale(1) contrast(1.06)}
+.ph.duo::after{content:'';position:absolute;inset:0;background:var(--g);mix-blend-mode:multiply;opacity:.62}
+.ph.duo:hover img{transform:scale(1.04)}
+.ph-cap{position:absolute;left:14px;bottom:12px;z-index:2;color:#fff;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+
+/* ═══ marquee — continuous right → left, seamless loop ═══ */
+.marquee{
+  overflow:hidden;position:relative;width:100vw;margin-left:calc(50% - 50vw);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);
+}
+.track{
+  display:flex;gap:14px;width:max-content;
+  animation:slide 42s linear infinite;
+  will-change:transform;
+}
+.marquee:hover .track{animation-play-state:paused}
+/* half the track + half a gap = the duplicate lands exactly where the original started */
+@keyframes slide{from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(-50% - 7px),0,0)}}
+.track .ph{flex:0 0 clamp(200px,25vw,290px);height:clamp(146px,18vw,200px)}
+@media(prefers-reduced-motion:reduce){
+  .marquee{overflow-x:auto;-webkit-mask-image:none;mask-image:none}
+  .track{animation:none;width:auto}
+}
+
+/* step photos on the landing */
+.howimg{height:150px;border-radius:14px;overflow:hidden;margin-bottom:16px;background:var(--g-soft)}
+.howimg img{width:100%;height:100%;object-fit:cover}
+
+/* thumbnail on a career card */
+.thumb{height:132px;border-radius:12px;overflow:hidden;margin:-6px -6px 14px;background:var(--g-soft)}
+.thumb img{width:100%;height:100%;object-fit:cover;transition:transform .45s cubic-bezier(.2,.9,.3,1)}
+.card.click:hover .thumb img{transform:scale(1.05)}
+.card.off .thumb img{filter:grayscale(1);opacity:.5}
+
+/* career detail banner */
+.banner{height:clamp(160px,26vw,260px);border-radius:20px;overflow:hidden;margin-top:18px;background:var(--g-soft)}
+.banner img{width:100%;height:100%;object-fit:cover}
+
+.rv{opacity:0;transform:translateY(24px)}
+.rv.seen{animation:up .7s cubic-bezier(.2,.9,.3,1) both}
+@keyframes up{to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.07s}.d2{animation-delay:.14s}.d3{animation-delay:.21s}
+
+/* ═══ APP SHELL ═══ */
+#app{display:none;min-height:100vh}
+#app.on{display:grid;grid-template-columns:216px minmax(0,1fr) 296px}
+@media(max-width:1080px){#app.on{grid-template-columns:minmax(0,1fr)}}
+
+.side{border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:5px}
+@media(max-width:1080px){.side{display:none}}
+.side .home{font-size:16.5px;font-weight:700;padding:8px 12px;margin-bottom:12px;background:none;border:0;cursor:pointer;
+  font-family:var(--th);text-align:left;color:var(--ink)}
+.nav{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;border:0;background:none;cursor:pointer;
+  font-family:var(--th);font-size:15.5px;color:var(--grey);text-align:left;width:100%;transition:background .12s,color .12s}
+.nav:hover{background:var(--g-soft)}
+.nav.on{background:var(--g-soft);color:var(--ink);font-weight:600}
+.nav svg{width:19px;height:19px;flex:none}
+.nav .dotdone{width:7px;height:7px;border-radius:50%;background:var(--g);margin-left:auto}
+
+.main{padding:clamp(22px,3vw,42px);min-width:0}
+.topbar{display:none}
+@media(max-width:1080px){
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);z-index:40}
+  .main{padding:18px 18px 96px}
+}
+.botnav{display:none}
+@media(max-width:1080px){
+  .botnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.97);
+    backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .botnav button{flex:1;background:none;border:0;cursor:pointer;font-family:var(--th);display:flex;flex-direction:column;
+    align-items:center;gap:3px;padding:7px 2px;color:var(--grey);font-size:11px;font-weight:500;border-radius:10px}
+  .botnav button.on{color:var(--g-dark)}
+  .botnav svg{width:21px;height:21px}
+}
+
+.rail{border-left:1px solid var(--line);padding:24px 20px;position:sticky;top:0;height:100vh;overflow-y:auto}
+@media(max-width:1080px){.rail{display:none}}
+.railcard{background:var(--g-soft);border-radius:16px;padding:18px;margin-bottom:14px}
+
+/* ═══ shared app bits ═══ */
+.card{border:1.5px solid var(--line);border-radius:18px;padding:22px;background:#fff}
+.card.click{cursor:pointer;text-align:left;width:100%;font-family:var(--th);color:var(--ink);
+  transition:transform .15s cubic-bezier(.2,.9,.3,1),border-color .15s,box-shadow .15s}
+.card.click:hover{transform:translateY(-3px);border-color:var(--g);box-shadow:0 10px 28px rgba(12,23,18,.08)}
+.card.off{background:var(--g-soft);border-style:dashed}
+.grid2{display:grid;gap:13px}
+@media(min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+.stk{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tag{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--grey)}
+.tag-g{color:var(--g-dark);font-weight:500}
+.tag-d{border-bottom:1.5px dashed var(--grey);padding-bottom:1px}
+.tag-s{color:var(--stop)}
+.pill{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:3px 10px;border-radius:100px;background:var(--g-soft);color:var(--g-dark)}
+.pill-s{background:var(--stop-soft);color:var(--stop)}
+.pill-w{background:#FDF3E0;color:#8A5A17}
+.note{font-size:15px;line-height:1.7;color:var(--grey);padding-left:14px;border-left:3px solid var(--line)}
+.note.g{border-left-color:var(--g);color:var(--ink)}
+.note.s{border-left-color:var(--stop);color:var(--stop);background:var(--stop-soft);padding:12px 14px;border-radius:0 10px 10px 0}
+.hr{height:1px;background:var(--line);border:0;margin:28px 0}
+
+.dots{display:flex;gap:4px;margin-bottom:22px}
+.dots i{height:4px;flex:1;background:var(--g-soft2);border-radius:3px;transition:background .3s}
+.dots i.on{background:var(--g)}
+.ans{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+.ans button{font-family:var(--th);font-size:17px;font-weight:500;text-align:left;padding:16px 20px;
+  border:2px solid var(--line);border-radius:13px;background:#fff;cursor:pointer;color:var(--ink);
+  transition:border-color .12s,background .12s,transform .1s}
+.ans button:hover{border-color:var(--g);transform:translateX(3px)}
+.ans button.sel{background:var(--g);border-color:var(--g)}
+
+.steps{position:relative}
+.st{display:grid;grid-template-columns:22px 1fr;gap:15px;padding:14px 0;position:relative;align-items:start}
+.nd{width:12px;height:12px;border-radius:50%;background:var(--g);margin:8px auto 0;position:relative;z-index:2;box-shadow:0 0 0 5px #fff}
+.nd.half{background:linear-gradient(90deg,var(--g) 50%,var(--g-soft2) 50%)}
+.nd.open{background:var(--g-soft2)}
+.nd.dash{background:transparent;border:2px dashed var(--grey)}
+.st::after{content:'';position:absolute;left:10px;top:23px;bottom:-3px;width:2px;background:var(--g);z-index:1}
+.st:last-child::after{display:none}
+.st.locked::after,.st.pre::after{background:repeating-linear-gradient(180deg,var(--g-soft2) 0 4px,transparent 4px 9px)}
+.st.locked{opacity:.55}
+.st .t{font-size:16.5px;line-height:1.6;font-weight:500}
+.st.act{background:var(--g-soft);border-radius:14px;padding:16px;margin:6px 0}
+.st.act .nd{box-shadow:0 0 0 5px var(--g-soft)}
+.st.act::after{left:26px;top:39px}
+.lv{display:inline-flex;gap:3px;vertical-align:middle}
+.lv i{width:15px;height:4px;border-radius:2px;background:var(--g-soft2)}
+.lv i.on{background:var(--g)}
+.lv i.claim{background:transparent;border-top:2px dashed var(--grey);height:0;align-self:center}
+
+.raw{font-size:16.5px;line-height:2.05;color:var(--grey);background:var(--g-soft);border-radius:14px;padding:18px}
+.raw mark{background:var(--g);color:var(--ink);font-weight:600;padding:2px 5px;border-radius:5px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:15px;font-weight:600;color:var(--ink)}
+.field input,.field select,.field textarea{font-family:var(--th);font-size:16.5px;padding:13px 14px;border:2px solid var(--line);
+  border-radius:12px;background:#fff;color:var(--ink);width:100%;line-height:1.6}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--g);outline:0}
+.sk{background:var(--g-soft);border-radius:12px;position:relative;overflow:hidden}
+.sk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:sweep 1.2s linear infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.fade{animation:fade .28s cubic-bezier(.2,.9,.3,1) both}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LANDING ══════════════ -->
+<div id="landing">
+<nav class="lnav" id="lnav">
+  <b style="font-size:17px" id="brandL">[ชื่อระบบ]</b>
+  <button class="btn btn-g btn-sm" data-start>เริ่มเลย</button>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="mono up rv">SIIT · 8 อาชีพ · O*NET 29.1</p>
+    <h1 class="rv d1" style="margin-top:16px">เว็บหางานบอกว่ามีงานอะไร<br><span style="color:var(--g)">เราบอกว่าจะไปถึงมันยังไง</span></h1>
+    <p class="lead rv d2" style="margin-top:24px;max-width:34ch">ส่งผลงานที่เคยทำ แล้วดูว่าอีกกี่ก้าวถึงอาชีพที่อยากได้ — <strong style="color:var(--ink)">ไม่ต้องรู้ล่วงหน้าว่าอยากเป็นอะไร</strong></p>
+    <div class="rv d3" style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-g" data-start>เริ่มเลย ฟรี</button>
+      <button class="btn btn-line" data-start="careers">ดูอาชีพทั้งหมด</button>
+    </div>
+    <div class="heroimg rv d3">
+      <img src="img/study-notes.jpg" alt="นักศึกษากำลังจดโน้ตและทำงานกับแล็ปท็อป">
+      <span class="badge"><i></i> ก้าวถัดไปของคุณ พร้อมแล้ว</span>
+    </div>
+  </div>
+</section>
+
+<section class="green">
+  <div class="wrap">
+    <p class="mono up rv" style="color:var(--g-dark)">ปัญหา</p>
+    <h2 class="rv d1 narrow" style="margin-top:12px">ปัญหาไม่ใช่ว่าไม่เก่ง<br>แต่มองไม่เห็นว่ามีทางอะไรบ้าง</h2>
+    <div class="two" style="margin-top:clamp(36px,5vw,64px)">
+      <div class="rv d2"><p class="huge">13<span style="font-size:.42em">%</span></p>
+        <p class="body" style="color:var(--ink);margin-top:12px;max-width:30ch">เด็กยากจน <strong>165,585 คน</strong> ที่จบ ม.3 พร้อมกัน — สี่ปีต่อมาเข้าถึงอุดมศึกษาแค่ 13.49% ขณะที่ทั้งประเทศ 31%</p></div>
+      <div class="rv d3"><p class="huge">12</p>
+        <p class="body" style="color:var(--ink);margin-top:12px;max-width:30ch">คะแนน PISA ของสามกลุ่มฐานะล่างต่างกันแค่ <strong>12 คะแนน</strong> — และ 15% ของกลุ่มต่ำสุดติด Top 25% ของประเทศ</p></div>
+    </div>
+    <p class="mono rv" style="margin-top:30px;color:var(--g-dark)">กสศ. × สป.อว. × ทปอ. 2567 · OECD PISA 2022</p>
+
+  </div>
+  <div class="marquee rv" style="margin-top:clamp(34px,5vw,54px)">
+    <div class="track" id="track"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap narrow">
+    <p class="mono up rv">สิ่งที่เราวัดเอง</p>
+    <h2 class="rv d1" style="margin-top:12px">แบบทดสอบทั่วไป<br>แยกอาชีพวิศวะไม่ออก</h2>
+    <p class="lead rv d2" style="margin-top:18px">เราเอาเครื่องมือของ O*NET มาทดสอบว่าแยก 8 อาชีพได้แค่ไหน ยิ่งสูงยิ่งดี</p>
+    <div class="rv d2" style="margin-top:40px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px">
+        <strong style="font-size:18px">กิจกรรมในงาน · 41 มิติ</strong><span class="mono" style="font-size:25px;color:var(--g-dark)">2.29</span></div>
+      <div class="bar"><i data-w="100"></i></div>
+      <p class="small" style="margin-top:8px">แยกได้ทุกคู่ — เราใช้ตัวนี้</p>
+    </div>
+    <div class="rv d3" style="margin-top:26px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px">
+        <strong style="font-size:18px;color:var(--grey)">RIASEC · 6 มิติ</strong><span class="mono" style="font-size:25px">0.43</span></div>
+      <div class="bar pale"><i data-w="19"></i></div>
+      <p class="small" style="margin-top:8px">มาตรฐานที่ใช้กันมากที่สุด — หุ่นยนต์กับกระบวนการผลิตแทบทับกัน</p>
+    </div>
+    <p class="mono rv" style="margin-top:30px">วัดเองจาก O*NET Database 29.1 · สร้างซ้ำได้ด้วย pipeline/1b_import_instruments.py</p>
+  </div>
+</section>
+
+<section class="soft">
+  <div class="wrap">
+    <p class="mono up rv">ใช้ยังไง</p>
+    <h2 class="rv d1" style="margin-top:12px">สามก้าว</h2>
+    <div class="hows" style="margin-top:clamp(34px,5vw,58px)">
+      <div class="rv d1">
+        <div class="howimg"><img src="img/students-lab.jpg" alt="นักศึกษานั่งคุยและทำงานร่วมกัน"></div>
+        <div class="hown">1</div><h3>ตอบเรื่องกิจกรรม</h3>
+        <p class="body" style="margin-top:8px">ถามว่าอยากทำ<strong>กิจกรรม</strong>อะไร ไม่ถามว่าคุณเป็นคนแบบไหน ไม่ต้องมีผลงานอะไรเลย</p></div>
+      <div class="rv d2">
+        <div class="howimg"><img src="img/writing-book.jpg" alt="กำลังเขียนโน้ตลงสมุด"></div>
+        <div class="hown">2</div><h3>ส่งผลงานที่เคยทำ</h3>
+        <p class="body" style="margin-top:8px">ระบบอ่านว่าผลงาน<strong>แสดง</strong>ความสามารถอะไร ชี้กลับไปที่บรรทัดได้ คุณต้องกดยืนยันก่อนถึงนับ</p></div>
+      <div class="rv d3">
+        <div class="howimg"><img src="img/team-laptop.jpg" alt="ทีมทำงานร่วมกันหน้าแล็ปท็อป"></div>
+        <div class="hown">3</div><h3>เห็นเส้นทางทั้งเส้น</h3>
+        <p class="body" style="margin-top:8px">เห็นได้ทั้งเส้น แต่รับปากทีละก้าว — บอกก้าวถัดไปหนึ่งก้าวที่ลงมือได้จริงวันนี้</p></div>
+    </div>
+    <div class="rv" style="margin-top:44px"><button class="btn" data-start>เริ่มเลย ฟรี</button></div>
+  </div>
+</section>
+
+<section class="dark" style="padding:0!important">
+  <div style="display:grid;grid-template-columns:1fr;align-items:stretch">
+    <div class="ph" style="border-radius:0;height:clamp(230px,34vw,380px)">
+      <img src="img/d-rebar.jpg" alt="คนงานกับเหล็กเสริมที่ไซต์ก่อสร้าง" style="filter:grayscale(1) contrast(1.05)">
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,23,18,.92) 0%,rgba(12,23,18,.62) 55%,rgba(12,23,18,.25) 100%)"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center">
+        <div class="wrap">
+          <p class="mono up rv" style="color:var(--g)">กติกาเหล็ก</p>
+          <h2 class="rv d1" style="color:#fff;margin-top:10px;max-width:20ch">ทุกข้อเสนอ ต้องย้อนกลับไปหาสิ่งที่คุณตอบเองได้</h2>
+          <p class="body rv d2" style="color:#C7D6CE;margin-top:12px;max-width:38ch">ย้อนไม่ได้ ไม่เสนอ — แม้รายการจะสั้นลงจนว่าง</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="padding:48px 0 64px;border-top:1px solid var(--line)">
+  <div class="wrap">
+    <p class="mono">ตอนนี้การอ่านผลงานใช้วิธีจับคำสำคัญ ยังไม่ใช่ AI · ข้อกำหนดของอาชีพทีมเรียบเรียงเอง ยังไม่ได้ยืนยันกับประกาศงานจริง (0 ประกาศ)</p>
+    <p class="mono" style="margin-top:10px">ภาพ: <a href="https://unsplash.com">Unsplash</a> · ใช้ได้เชิงพาณิชย์ ไม่ต้องให้เครดิต</p>
+  </div>
+</footer>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+  <aside class="side">
+    <button class="home" id="brandA">[ชื่อระบบ]</button>
+    <button class="nav" data-r="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 015.6 1.4c0 2-2.8 2.6-2.8 2.6M12 17h.01"/></svg>แบบทดสอบ<span class="dotdone" id="dQuiz" style="display:none"></span></button>
+    <button class="nav" data-r="careers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>อาชีพ</button>
+    <button class="nav" data-r="roadmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 010 8H9a4 4 0 000 8h6.5"/></svg>เส้นทาง<span class="dotdone" id="dTarget" style="display:none"></span></button>
+    <button class="nav" data-r="upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v13"/></svg>ผลงาน<span class="dotdone" id="dCv" style="display:none"></span></button>
+    <button class="nav" data-r="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg>โปรไฟล์<span class="dotdone" id="dProf" style="display:none"></span></button>
+    <div style="flex:1"></div>
+    <button class="nav" data-r="data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>ข้อมูลของฉัน</button>
+  </aside>
+
+  <div style="min-width:0">
+    <div class="topbar">
+      <button class="home" id="brandM" style="padding:0">[ชื่อระบบ]</button>
+      <span class="mono" id="topTarget"></span>
+    </div>
+    <main class="main" id="view"></main>
+  </div>
+
+  <aside class="rail" id="rail"></aside>
+</div>
+
+<nav class="botnav" id="botnav">
+  <button data-r="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 015.6 1.4c0 2-2.8 2.6-2.8 2.6M12 17h.01"/></svg>ทดสอบ</button>
+  <button data-r="careers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>อาชีพ</button>
+  <button data-r="roadmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 010 8H9a4 4 0 000 8h6.5"/></svg>เส้นทาง</button>
+  <button data-r="upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v13"/></svg>ผลงาน</button>
+  <button data-r="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg>โปรไฟล์</button>
+</nav>
+
+<script src="extract.js"></script>
+<script src="app-data.js"></script>
+<script src="app-engine.js"></script>
+<script src="app-ui.js"></script>
+</body>
+</html>

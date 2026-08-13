@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import httpx
 
@@ -62,6 +63,8 @@ def main() -> int:
     ap.add_argument("--field", default="CPE", help="สาขาที่เรียน (CE CPE ChE EE IE ME DE)")
     ap.add_argument("--obligation", default="none", help="none | gov | univ")
     ap.add_argument(
+        "--cv", help="CV ของตัวเอง (.pdf หรือ .txt) — ไม่ใส่ = ใช้ CV สมมติในสคริปต์")
+    ap.add_argument(
         "--skip-discover", action="store_true",
         help="ไม่ต้องตอบแบบทดสอบ (ใช้เมื่อจะทดสอบเฉพาะฝั่ง 'รู้แล้ว')",
     )
@@ -88,9 +91,27 @@ def main() -> int:
     print(f"  ② โปรไฟล์                      {args.field} · ปี 2 · 8 ชม./สัปดาห์ · ทุน {args.obligation}")
 
     # ── CV → สกัด → ยืนยัน ──
-    doc = c.post("/portfolio/text", json={
-        "user_id": uid, "text": CV, "consent": True,
-    }).json()
+    # 🔒 consent=True ทุกทาง — API ปฏิเสธถ้าไม่ยินยอม เพราะ CV เป็นข้อมูลส่วนบุคคล
+    if args.cv:
+        path = Path(args.cv).expanduser()
+        if not path.exists():
+            print(f"❌ ไม่พบไฟล์ {path}", file=sys.stderr)
+            return 1
+        if path.suffix.lower() == ".pdf":
+            # ใช้ทางอัปโหลดจริง จะได้เดินผ่านด่านเดียวกับที่ผู้ใช้จริงเดิน
+            r = c.post("/portfolio/upload", params={"user_id": uid, "consent": True},
+                       files={"file": (path.name, path.read_bytes(), "application/pdf")})
+        else:
+            r = c.post("/portfolio/text", json={
+                "user_id": uid, "text": path.read_text(encoding="utf-8"), "consent": True})
+        if r.status_code != 200:
+            print(f"❌ ส่ง CV ไม่สำเร็จ: {r.status_code} {r.text[:200]}", file=sys.stderr)
+            return 1
+        doc = r.json()
+    else:
+        doc = c.post("/portfolio/text", json={
+            "user_id": uid, "text": CV, "consent": True,
+        }).json()
     review = c.get(f"/portfolio/{doc['document_id']}").json()
     # ยืนยันทุกข้อที่มั่นใจ ≥ 0.5 · ที่เหลือปฏิเสธ เพื่อให้หน้าจอมีทั้งสองสถานะให้ดู
     decisions = {
@@ -100,8 +121,12 @@ def main() -> int:
     confirmed = c.post(f"/portfolio/{doc['document_id']}/confirm", json={
         "user_id": uid, "decisions": decisions,
     }).json()
-    print(f"  ③ ส่ง CV + ยืนยันผลสกัด        สกัดได้ {doc['extracted_count']} "
-          f"· ยืนยัน {len(confirmed['confirmed_skills'])} ทักษะ")
+    source = f"จาก {args.cv}" if args.cv else "CV สมมติในสคริปต์"
+    print(f"  ③ ส่ง CV + ยืนยันผลสกัด        {source} · {doc['char_count']} ตัวอักษร")
+    print(f"      สกัดได้ {doc['extracted_count']} · ยืนยัน "
+          f"{len(confirmed['confirmed_skills'])} ทักษะ · ตัวสกัด {doc['extractor']}")
+    if args.cv and doc["extracted_count"] == 0:
+        print("      ⚠️  สกัดไม่ได้เลย — ถ้าเป็น PDF ที่สแกนมาเป็นภาพ จะไม่มี text layer ให้อ่าน")
 
     # ── แบบทดสอบฝั่ง "ยังไม่รู้" ──
     target_id = None
@@ -149,7 +174,9 @@ def main() -> int:
 
    localStorage.setItem("siit-roadmap-user", "{uid}"); location.reload()
 
-   แล้วเปิดหน้าไหนก็ได้ — /roadmap · /portfolio · /targets · /discover
+   🔴 หน้าฝั่งผู้เรียนยังไม่ได้สร้าง — ตอนนี้ดูผลได้ที่ http://localhost:8000/docs
+      หรืออ่านสรุป roadmap ที่สคริปต์นี้พิมพ์ให้ข้างบน
+      หน้าที่เปิดได้จริงตอนนี้: /employer · /employer/review
    ลบผู้ใช้ตัวอย่างทิ้ง:  curl -X DELETE "{args.base}/me?user_id={uid}"
 """)
     return 0

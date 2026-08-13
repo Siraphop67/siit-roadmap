@@ -60,8 +60,9 @@ test:
 # ผู้ใช้ตัวอย่างที่ตอบแบบทดสอบ ส่ง CV ยืนยันผลสกัด และเลือกเป้าหมายมาแล้ว
 # สำหรับคนทำหน้าเว็บ จะได้ไม่ต้องเดินทั้งเส้นใหม่ทุกครั้งที่รีเฟรช
 # persona: data (ค่าเริ่มต้น) · hands-on · people   →  make demo-user P=hands-on
+# CV=~/resume.pdf เพื่อใช้ CV ของตัวเองแทน CV สมมติ
 demo-user:
-	@cd backend && .venv/bin/python scripts/demo_user.py --persona $(or $(P),data)
+	@cd backend && .venv/bin/python scripts/demo_user.py --persona $(or $(P),data) $(if $(CV),--cv $(CV))
 
 # ด่านตรวจของคนเก็บประกาศงาน — ไม่ต้องเปิด backend ไม่แตะฐานข้อมูล
 check-postings:

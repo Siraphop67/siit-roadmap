@@ -8,6 +8,7 @@
   ตรวจผลสกัด       GET  /portfolio/{id} · POST /portfolio/{id}/confirm
   เลือกเป้าหมาย     POST /goal
   ★ ROADMAP ★     GET  /roadmap
+  รายละเอียดคอร์ส   GET  /resources/{id}
   เส้นทางของฉัน     GET  /roadmaps
   ข้อมูลของฉัน      GET  /me · DELETE /me
 """
@@ -110,6 +111,38 @@ def _resources(db: Session) -> dict[str, list[Resource]]:
             proof_of_done=res.proof_of_done, reaches_level=link.reaches_level,
         ))
     return out
+
+
+def _resource_learning_flow(resource: LearningResource) -> list[dict]:
+    """แผนการเรียนตัวอย่างที่อธิบายได้กับทุก resource โดยไม่อ้างว่าเป็น syllabus จริง.
+
+    คลัง resource ปัจจุบันส่วนใหญ่ยังเป็น ``placeholder`` จึงต้องแยกสิ่งที่ระบบ
+    "แนะนำให้ทำ" ออกจากรายละเอียดหลักสูตรจริงของผู้ให้บริการอย่างชัดเจน.
+    """
+    hours = max(resource.est_hours, 1)
+    explore = max(1, round(hours * 0.2))
+    practice = max(1, round(hours * 0.6))
+    prove = max(1, hours - explore - practice)
+    return [
+        {
+            "order": 1,
+            "title": "เตรียมพื้นฐานและตั้งเป้าหมาย",
+            "detail": f"อ่านโจทย์ของ {resource.title} และกำหนดสิ่งที่อยากทำให้สำเร็จ",
+            "est_hours": explore,
+        },
+        {
+            "order": 2,
+            "title": "เรียนและลงมือทำ",
+            "detail": resource.description or "ฝึกตามเนื้อหาหลัก พร้อมบันทึกสิ่งที่ทำและอุปสรรคที่พบ",
+            "est_hours": practice,
+        },
+        {
+            "order": 3,
+            "title": "สร้างหลักฐานความสามารถ",
+            "detail": resource.proof_of_done,
+            "est_hours": prove,
+        },
+    ]
 
 
 def _requirements(db: Session, target_id: str) -> list[Requirement]:
@@ -559,6 +592,102 @@ def set_goal(body: GoalRequest, db: Session = Depends(get_db)) -> dict:
                         is_primary=True, source="self", traced_to_json=[]))
     db.commit()
     return {"target_id": body.target_id}
+
+
+# ═════════════════════ รายละเอียด Course / Resource ═════════════════════
+
+
+@router.get("/resources/{resource_id}")
+def get_resource(
+    resource_id: str,
+    user_id: str | None = None,
+    target_id: str | None = None,
+    db: Session = Depends(get_db),
+) -> dict:
+    """รายละเอียดทรัพยากรหนึ่งชิ้น และผลของมันต่อ roadmap ที่กำลังดู.
+
+    หน้า Roadmap ใช้ endpoint นี้หลังผู้ใช้กดการ์ด course เพื่อให้เห็นว่า
+    "เรียนสิ่งนี้แล้ว ทักษะใดจะขยับ และปลดล็อกเส้นทางไหน" โดยไม่ต้องส่ง skill graph
+    ทั้งใบไปให้ frontend. ``target_id`` และ ``user_id`` เป็น optional เพื่อให้เปิดดู
+    catalog ได้แม้ยังไม่ได้เริ่ม session.
+    """
+    resource = db.get(LearningResource, resource_id)
+    if not resource:
+        raise HTTPException(404, "ไม่พบคอร์สหรือกิจกรรมนี้")
+
+    current: dict[str, int] = {}
+    if user_id:
+        _user(db, user_id)
+        current = merge_evidence(_confirmed_skills(db, user_id), _self_reported(db, user_id))
+
+    target: CareerTarget | None = None
+    roadmap_steps: dict[str, object] = {}
+    if target_id:
+        target = db.get(CareerTarget, target_id)
+        if not target:
+            raise HTTPException(404, "ไม่พบอาชีพเป้าหมาย")
+
+        # คำนวณเฉพาะเพื่ออธิบายผลของ course; ไม่ persist เพราะผู้ใช้ยังแค่เปิดอ่าน
+        _profile_in, profile = _profile_input(db, user_id) if user_id else (None, None)
+        roadmap = build_roadmap(
+            graph=_graph(db),
+            target_id=target_id,
+            requirements=_requirements(db, target_id),
+            have=current,
+            resources=_resources(db),
+            skill_names=_skill_names(db),
+            flexible_skills=ORDER_FLEXIBLE,
+            hours_per_week=profile.hours_per_week if profile else None,
+            budget_baht=profile.budget_baht if profile else None,
+            year=profile.year if profile else None,
+        )
+        roadmap_steps = {step.skill_id: step for step in roadmap.steps}
+
+    rows = db.execute(
+        select(ResourceSkill, Skill)
+        .join(Skill, Skill.id == ResourceSkill.skill_id)
+        .where(ResourceSkill.resource_id == resource_id)
+        .order_by(ResourceSkill.skill_id)
+    ).all()
+
+    teaches = []
+    for link, skill in rows:
+        step = roadmap_steps.get(skill.id)
+        teaches.append({
+            "skill_id": skill.id,
+            "name_th": skill.display_name,
+            "name_en": skill.name_en,
+            "reaches_level": link.reaches_level,
+            "current_level": current.get(skill.id),
+            "roadmap_status": step.status if step else None,
+            "roadmap_target_level": step.target_level if step else None,
+            "unlock_count": step.unlock_count if step else 0,
+        })
+
+    return {
+        "id": resource.id,
+        "kind": resource.kind,
+        "kind_label": RESOURCE_KIND_TH.get(resource.kind, resource.kind),
+        "title": resource.title,
+        "provider": resource.provider,
+        "description": resource.description,
+        "url": resource.url,
+        "est_hours": resource.est_hours,
+        "cost_baht": resource.cost_baht,
+        "min_year": resource.min_year,
+        "proof_of_done": resource.proof_of_done,
+        "data_status": resource.data_status,
+        "teaches": teaches,
+        "roadmap_context": (
+            {"target_id": target.id, "title_th": target.title_th, "title_en": target.title_en}
+            if target else None
+        ),
+        "example_learning_flow": _resource_learning_flow(resource),
+        "note": (
+            "แผน 3 ขั้นนี้เป็นตัวอย่างการลงมือทำที่ระบบสร้างจากเวลาและหลักฐานที่ต้องส่ง "
+            "ไม่ใช่ syllabus อย่างเป็นทางการของผู้ให้บริการ"
+        ),
+    }
 
 
 @router.get("/roadmap")

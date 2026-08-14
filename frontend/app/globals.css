@@ -1,76 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
 @import "tailwindcss";
 
-/**
- * โทเคนสีของทั้งเว็บ — ทุกหน้าใช้ชุดนี้ ไม่ตั้งสีเองรายหน้า
- *
- * 🔴 สีผูกกับความหมาย ไม่ใช่ความสวย
- *    accent  ทางที่เดินต่อได้ · ปุ่มหลัก
- *    warn    เงื่อนไขที่ยังไม่ผ่าน แต่ยังไปถึงได้ (ชั้นปี · เกรด)
- *    stop    เงื่อนไขถาวรที่ตัดออกจริง (สาขา · ทุน)
- *    ห้ามใช้ stop กับเงื่อนไขตามเวลา เพราะจะอ่านเหมือนปิดประตู ทั้งที่แค่ยังไม่ถึงเวลา
- */
-:root {
-  --background: #ffffff;
-  --surface: #f7f7f8;
-  --foreground: #17171a;
-  --muted: #62626b;
-  --faint: #8e8e97;
-  --line: #e3e3e7;
-  --line-strong: #c9c9d0;
-  --accent: #1f5f4d;
-  --accent-soft: #e8f2ee;
-  --warn: #8a5a12;
-  --warn-soft: #fdf3e2;
-  --stop: #9b2c2c;
-  --stop-soft: #fceeee;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0d0d0f;
-    --surface: #16161a;
-    --foreground: #ededf0;
-    --muted: #a5a5ad;
-    --faint: #7c7c86;
-    --line: #26262c;
-    --line-strong: #3a3a43;
-    --accent: #63bfa3;
-    --accent-soft: #12251f;
-    --warn: #e0b062;
-    --warn-soft: #2a2113;
-    --stop: #e88b8b;
-    --stop-soft: #2a1616;
-  }
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-stop: var(--stop);
-  --color-stop-soft: var(--stop-soft);
-  --font-sans: var(--font-sans-th);
-  --font-mono: var(--font-mono-th);
+  --color-outline: #727783;
+  --color-surface-dim: #d8d9e1;
+  --color-on-tertiary: #ffffff;
+  --color-surface-muted: #f7f7f5;
+  --color-surface-bg: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-background: #f9f9ff;
+  --color-inverse-primary: #a9c7ff;
+  --color-tertiary-container: #af6100;
+  --color-tertiary-fixed: #ffdcc1;
+  --color-tertiary: #8b4c00;
+  --color-text-main: #2f2f2f;
+  --color-inverse-on-surface: #eff0f8;
+  --color-on-tertiary-container: #fffbff;
+  --color-surface-container: #ecedf5;
+  --color-on-secondary: #ffffff;
+  --color-surface-tint: #085db5;
+  --color-surface-container-highest: #e1e2ea;
+  --color-on-secondary-container: #5e6570;
+  --color-primary: #005bb2;
+  --color-on-primary-fixed: #001b3d;
+  --color-error: #ba1a1a;
+  --color-surface: #f9f9ff;
+  --color-surface-bright: #f9f9ff;
+  --color-inverse-surface: #2e3036;
+  --color-on-surface-variant: #424752;
+  --color-on-primary-container: #fefcff;
+  --color-primary-fixed: #d6e3ff;
+  --color-secondary: #585f6a;
+  --color-error-container: #ffdad6;
+  --color-border-low: #e9e9e7;
+  --color-on-primary-fixed-variant: #00468c;
+  --color-outline-variant: #c2c6d4;
+  --color-surface-container-low: #f2f3fb;
+  --color-secondary-fixed: #dce3f0;
+  --color-on-primary: #ffffff;
+  --color-surface-container-high: #e7e8f0;
+  --color-roadmap-accent: #d4402e;
+  --color-primary-fixed-dim: #a9c7ff;
+  --color-text-subtle: #737373;
+  --color-surface-variant: #e1e2ea;
+  --color-on-tertiary-fixed-variant: #6c3a00;
+  --color-secondary-fixed-dim: #c0c7d3;
+  --color-on-error-container: #93000a;
+  --color-secondary-container: #dce3f0;
+  --color-on-secondary-fixed: #151c25;
+  --color-on-error: #ffffff;
+  --color-on-background: #191c21;
+  --color-on-surface: #191c21;
+  --color-primary-container: #3274cd;
+  --color-on-tertiary-fixed: #2e1500;
+  --color-on-secondary-fixed-variant: #404751;
+  --color-tertiary-fixed-dim: #ffb779;
+
+  /* Compatibility with the repository's pre-existing employer/detail pages. */
+  --color-foreground: #191c21;
+  --color-muted: #62626b;
+  --color-faint: #8e8e97;
+  --color-line: #e3e3e7;
+  --color-line-strong: #c9c9d0;
+  --color-accent: #005bb2;
+  --color-accent-soft: #eaf2ff;
+  --color-warn: #8a5a12;
+  --color-warn-soft: #fdf3e2;
+  --color-stop: #9b2c2c;
+  --color-stop-soft: #fceeee;
+
+  --font-body-md: Inter, "Noto Sans Thai", sans-serif;
+  --font-body-lg: Inter, "Noto Sans Thai", sans-serif;
+  --font-label-sm: Inter, "Noto Sans Thai", sans-serif;
+  --font-display-lg: "Plus Jakarta Sans", "Noto Sans Thai", sans-serif;
+  --font-headline-lg: "Plus Jakarta Sans", "Noto Sans Thai", sans-serif;
+  --font-headline-md: "Plus Jakarta Sans", "Noto Sans Thai", sans-serif;
+  --font-headline-lg-mobile: "Plus Jakarta Sans", "Noto Sans Thai", sans-serif;
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 1.2;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 1.3;
+  --text-headline-lg-mobile: 28px;
+  --text-headline-lg-mobile--line-height: 1.2;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.6;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.5;
+  --text-label-sm: 13px;
+  --text-label-sm--line-height: 1;
+  --text-label-sm--letter-spacing: 0.02em;
+
+  --spacing-stack-lg: 32px;
+  --spacing-stack-md: 16px;
+  --spacing-stack-sm: 8px;
+  --spacing-base-unit: 4px;
+  --spacing-margin-mobile: 16px;
+  --spacing-gutter: 24px;
+  --spacing-container-max: 1100px;
 }
 
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans-th), system-ui, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #191c21;
+  font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-
-/* กลุ่มเป้าหมายเข้าผ่านมือถือเป็นหลัก — ความกว้างที่อ่านง่ายคุมไว้ที่นี่ที่เดียว */
-.shell {
-  width: 100%;
-  max-width: 62rem;
-  margin-inline: auto;
-  padding-inline: 1.25rem;
+button, input, textarea, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  line-height: 1;
+}
+.icon-fill { font-variation-settings: "FILL" 1; }
+.ambient-shadow { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+.bento-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 24px; }
+.graph-bg { background-image: radial-gradient(#e9e9e7 1px, transparent 1px); background-size: 24px 24px; }
+.notion-card { background: #f7f7f5; border: 1px solid #e9e9e7; border-radius: .5rem; }
+.notion-shadow { transition: transform .2s ease, box-shadow .2s ease; }
+.notion-shadow:hover { box-shadow: 0 4px 12px rgba(0,0,0,.05); transform: translateY(-2px); }
+.connector-line { width: 2px; background: #e9e9e7; position: absolute; left: 24px; top: 48px; bottom: -32px; z-index: 0; }
+.step-node { position: relative; z-index: 1; }
+.radio-tile { transition: all .2s ease; }
+.radio-tile-input:checked + .radio-tile { border-color: #3274cd; background: #d6e3ff; color: #001b3d; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
+.radio-tile-input:checked + .radio-tile .material-symbols-outlined { color: #3274cd; }
+.shell { width: 100%; max-width: 62rem; margin-inline: auto; padding-inline: 1.25rem; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
 }

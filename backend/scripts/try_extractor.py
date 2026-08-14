@@ -100,8 +100,13 @@ def main() -> int:
     ap.add_argument("--compare", action="store_true", help="เทียบกับ keyword ข้าง ๆ กัน")
     args = ap.parse_args()
 
+    # --model ทับรุ่นของ provider ที่กำลังลอง ไม่ใช่ของ local เสมอ
+    # ไม่งั้นสั่ง P=gemini M=... แล้วมันจะเงียบ ๆ ใช้รุ่นเดิม แล้วเราจะวัดผิดตัวโดยไม่รู้
     if args.model:
-        settings.local_llm_model = args.model
+        if args.provider in {"gemini", "google"}:
+            settings.gemini_model = args.model
+        else:
+            settings.local_llm_model = args.model
     if args.base_url:
         settings.local_llm_base_url = args.base_url
 
@@ -110,6 +115,9 @@ def main() -> int:
           + (f" · จาก {args.cv}" if args.cv else " · ตัวอย่างในสคริปต์"))
     if args.provider == "local":
         print(f"ปลายทาง {settings.local_llm_base_url} · รุ่น {settings.local_llm_model}")
+    if args.provider in {"gemini", "google"}:
+        print(f"ปลายทาง Google AI Studio · รุ่น {settings.gemini_model}"
+              + (" · ปิดส่วนคิด" if settings.gemini_thinking_budget == 0 else ""))
 
     providers = [args.provider] + (["keyword"] if args.compare
                                    and args.provider != "keyword" else [])

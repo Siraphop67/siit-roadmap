@@ -1,70 +1,180 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, session, type RoadmapResponse, type RoadmapStep, type StepOption } from "@/lib/api";
+import {
+  api,
+  session,
+  type CharacterBuild,
+  type QuestList,
+  type RoadmapResponse,
+  type RoadmapStep,
+  type StepOption,
+} from "@/lib/api";
 import { Icon, InlineNotice, MobileWorkspaceNav, WorkspaceSidebar } from "@/components/student-ui";
 
 const statusStyle = {
-  current: { icon: "play_arrow", label: "Current", node: "bg-primary text-on-primary", badge: "bg-primary-fixed text-primary", card: "border-primary/50", bar: "bg-primary" },
-  in_progress: { icon: "data_object", label: "In Progress", node: "bg-surface-muted border-2 border-primary text-primary", badge: "bg-primary-fixed text-primary", card: "border-primary/50", bar: "bg-primary" },
-  locked: { icon: "lock", label: "Locked", node: "bg-surface-muted border-2 border-border-low text-outline", badge: "bg-surface-container text-text-subtle", card: "opacity-70", bar: "bg-outline" },
-  flexible: { icon: "tune", label: "Flexible", node: "bg-surface-muted border-2 border-secondary text-secondary", badge: "bg-secondary-container text-secondary", card: "border-secondary/50", bar: "bg-secondary" },
+  current: { icon: "play_arrow", label: "NEXT QUEST", dot: "bg-[#78b7ff] border-[#a8d5ff] text-[#062142]", ring: "ring-[#78b7ff]/30", card: "border-[#78b7ff]/60 bg-[#112d51]" },
+  in_progress: { icon: "trending_up", label: "LEVEL UP", dot: "bg-[#8bdab2] border-[#d3f7e3] text-[#0d3c27]", ring: "ring-[#8bdab2]/25", card: "border-[#8bdab2]/50 bg-[#102d32]" },
+  flexible: { icon: "auto_awesome", label: "SIDE QUEST", dot: "bg-[#f4bb61] border-[#ffe3a8] text-[#4d2e00]", ring: "ring-[#f4bb61]/25", card: "border-[#f4bb61]/50 bg-[#36260d]" },
+  locked: { icon: "lock", label: "LOCKED", dot: "bg-[#223a57] border-[#5b6d84] text-[#9fb1c8]", ring: "ring-transparent", card: "border-white/10 bg-[#0b1c30]" },
 } as const;
 
-const resourceIcon: Record<string, string> = { project: "construction", competition: "emoji_events", siit_course: "school", online_course: "workspace_premium", certificate: "verified", activity: "local_activity", internship: "work" };
+const resourceIcon: Record<string, string> = {
+  project: "construction", competition: "emoji_events", siit_course: "school",
+  online_course: "workspace_premium", certificate: "verified", activity: "local_activity", internship: "work",
+};
 
-function OptionCard({ option, locked, onOpen }: { option: StepOption; locked: boolean; onOpen: () => void }) {
-  return <button type="button" onClick={onOpen} className={`w-full text-left bg-surface-bg border rounded p-3 transition-colors relative ${option.blocked_reason ? "border-error/30" : "border-border-low hover:border-primary"} ${locked ? "cursor-pointer opacity-80" : "cursor-pointer"}`} title={option.blocked_reason ?? undefined}>
-    <div className="flex items-center gap-2 mb-1"><Icon className={`${locked ? "text-text-subtle" : "text-primary"} text-[18px]`}>{resourceIcon[option.kind] ?? "school"}</Icon><span className="font-label-sm text-label-sm text-text-main">{option.kind_label}</span>{option.generated && <span className="text-[10px] bg-tertiary-fixed text-tertiary px-1.5 py-0.5 rounded">ระบบสร้าง</span>}</div>
-    <p className="text-sm text-text-subtle">{option.title}{option.est_hours != null && ` (${option.est_hours} ชม.)`}</p>
-    {option.blocked_reason && <p className="mt-2 text-xs text-error flex gap-1"><Icon className="text-sm">lock</Icon>{option.blocked_reason}</p>}
-    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary"><Icon className="text-sm">arrow_forward</Icon>ดูตัวอย่างการเรียน</span>
-  </button>;
+const builds: Array<{ value: CharacterBuild["archetype"]; playstyle: CharacterBuild["playstyle"]; title: string; subtitle: string; icon: string; color: string }> = [
+  { value: "builder", playstyle: "create", title: "Builder", subtitle: "ชอบสร้างสิ่งที่จับต้องได้", icon: "construction", color: "border-[#78b7ff] bg-[#78b7ff]/15" },
+  { value: "analyst", playstyle: "solve", title: "Analyst", subtitle: "ชอบแกะโจทย์ให้เห็นคำตอบ", icon: "analytics", color: "border-[#b9a5ff] bg-[#b9a5ff]/15" },
+  { value: "maker", playstyle: "explore", title: "Maker", subtitle: "ชอบทดลองและลงมือไว", icon: "precision_manufacturing", color: "border-[#8bdab2] bg-[#8bdab2]/15" },
+  { value: "optimizer", playstyle: "improve", title: "Optimizer", subtitle: "ชอบทำของเดิมให้ดีขึ้น", icon: "tune", color: "border-[#f4bb61] bg-[#f4bb61]/15" },
+];
+
+function progressPercent(done: number, total: number) {
+  return total ? Math.round((done / total) * 100) : 0;
 }
 
-function StepCard({ step, last, onOpenCourse }: { step: RoadmapStep; last: boolean; onOpenCourse: (resourceId: string) => void }) {
-  const style = statusStyle[step.status];
-  return <div className={`relative ${last ? "" : "mb-stack-lg"}`}>
-    {!last && <div className="connector-line" />}
-    <div className="flex items-start gap-4 md:gap-6 step-node">
-      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 mt-1 border-4 border-surface-bg shadow-sm ${style.node}`}><Icon className={step.status === "current" ? "icon-fill" : ""}>{style.icon}</Icon></div>
-      <article className={`flex-1 notion-card p-stack-md notion-shadow relative overflow-hidden ${style.card}`}>
-        {step.actionable && <div className={`absolute top-0 left-0 w-2 h-full ${style.bar}`} />}
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-stack-sm pl-1"><h2 className="font-headline-md text-lg md:text-headline-md font-semibold text-text-main">{step.name_th}</h2><div className="flex flex-wrap sm:flex-col sm:items-end gap-1"><span className={`${style.badge} font-label-sm text-label-sm px-2 py-1 rounded flex items-center gap-1`}><Icon className="text-[14px]">{style.icon}</Icon>{style.label}</span>{step.evidence_kind && <span className="text-[11px] text-text-subtle flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-full"><Icon className="text-[12px]">verified</Icon>{step.evidence_kind === "extracted" ? "หลักฐานจาก CV" : step.evidence_kind === "self_reported" ? "ผู้ใช้ประเมินเอง" : "CV + ประเมินเอง"}</span>}</div></div>
-        <p className="text-text-subtle mb-stack-md pl-1">ระดับ {step.current_level}→{step.target_level}{step.unlock_count > 0 && ` · ปลดล็อกอีก ${step.unlock_count} ทักษะ`}</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pl-1">{step.options.map((option) => <OptionCard key={option.resource_id} option={option} locked={step.status === "locked"} onOpen={() => onOpenCourse(option.resource_id)} />)}</div>
-      </article>
-    </div>
-  </div>;
+function SkillTree({ steps, activeId, onSelect }: { steps: RoadmapStep[]; activeId: string | null; onSelect: (id: string) => void }) {
+  return (
+    <section className="relative overflow-hidden rounded-[28px] border border-[#244766] bg-[#071a2e] p-5 md:p-8 shadow-[0_24px_64px_rgba(3,15,30,.34)]">
+      <div className="pointer-events-none absolute inset-0 opacity-35" style={{ backgroundImage: "linear-gradient(rgba(122,183,255,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(122,183,255,.13) 1px, transparent 1px)", backgroundSize: "38px 38px" }} />
+      <div className="pointer-events-none absolute -left-20 bottom-[-100px] h-72 w-72 rounded-full bg-[#1778ca]/20 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-[-70px] h-56 w-56 rounded-full border border-[#f4bb61]/25" />
+      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div><p className="text-[11px] font-bold tracking-[.18em] text-[#8fc4ff]">YOUR SKILL TREE</p><h2 className="mt-1 text-2xl font-bold text-white">เลือก node แล้วเริ่ม Quest ได้เลย</h2></div>
+        <div className="flex flex-wrap gap-3 text-[11px] text-white/65"><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#78b7ff]" />เริ่มได้ตอนนี้</span><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#8bdab2]" />กำลังพัฒนา</span><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#f4bb61]" />ทำเมื่อไหร่ก็ได้</span></div>
+      </div>
+      <div className="relative mt-8 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+        {steps.map((step, index) => {
+          const style = statusStyle[step.status];
+          const active = activeId === step.skill_id;
+          return <button key={step.skill_id} type="button" onClick={() => onSelect(step.skill_id)} className={`group relative min-h-36 rounded-2xl border p-3 text-left transition duration-200 hover:-translate-y-1 hover:shadow-2xl ${style.card} ${active ? `ring-4 ${style.ring} -translate-y-1` : ""}`}>
+            {index > 0 && <span className="pointer-events-none absolute -left-3 top-1/2 hidden h-px w-3 bg-white/20 lg:block" />}
+            <span className={`grid h-10 w-10 place-items-center rounded-xl border-2 shadow-lg ${style.dot}`}><Icon className={step.status === "current" ? "icon-fill" : ""}>{style.icon}</Icon></span>
+            <p className="mt-4 text-[10px] font-bold tracking-[.12em] text-white/50">{String(step.order_no).padStart(2, "0")} · {style.label}</p>
+            <p className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white">{step.name_th}</p>
+            <p className="mt-2 text-[11px] text-white/55">Lv. {step.current_level} → {step.target_level}</p>
+            {step.unlock_count > 0 && <span className="absolute right-3 top-3 text-[10px] text-[#f7d18a]">+{step.unlock_count} ✦</span>}
+          </button>;
+        })}
+      </div>
+    </section>
+  );
 }
 
-function QuestMap({ steps }: { steps: RoadmapStep[] }) {
-  return <section className="mt-6 rounded-2xl border border-border-low bg-[#0d2543] p-5 md:p-7 overflow-hidden relative">
-    <div className="absolute -right-20 -top-24 w-80 h-80 rounded-full border border-white/10" aria-hidden="true" />
-    <div className="relative flex items-center justify-between gap-4 mb-6"><div><p className="text-[11px] font-bold tracking-[.16em] text-primary-fixed">SKILL CONSTELLATION</p><h2 className="mt-1 text-xl md:text-2xl font-bold text-white">เส้นทางที่กำลังปลดล็อก</h2></div><span className="text-xs text-white/60">กดเลือก course ใน quest ด้านล่างเพื่อเริ่ม</span></div>
-    <div className="relative flex gap-3 min-w-max overflow-x-auto pb-2">{steps.slice(0, 10).map((step, index) => { const current = step.status === "current"; const done = step.status === "in_progress"; return <div key={step.skill_id} className="flex items-center gap-3"><div className="w-32 sm:w-40"><div className={`w-12 h-12 rounded-2xl grid place-items-center border-2 ${current ? "bg-primary border-primary text-white shadow-[0_0_0_6px_rgba(82,145,229,.18)]" : done ? "bg-[#9ce2c3] border-[#9ce2c3] text-[#123c2a]" : step.status === "flexible" ? "bg-[#f5c36d] border-[#f5c36d] text-[#5a3300]" : "bg-white/10 border-white/20 text-white/55"}`}><Icon>{current ? "play_arrow" : done ? "check" : step.status === "flexible" ? "stars" : "lock"}</Icon></div><p className={`mt-3 text-xs font-semibold leading-snug ${current ? "text-white" : "text-white/70"}`}>{step.name_th}</p><p className="mt-1 text-[10px] text-white/45">{current ? "NEXT QUEST" : statusStyle[step.status].label}</p></div>{index < Math.min(steps.length, 10) - 1 && <div className={`h-px w-8 sm:w-12 ${current || done ? "bg-primary-fixed" : "bg-white/20"}`} />}</div>; })}</div>
-  </section>;
+function ResourceQuest({ option, step, questStatus, busy, onStart, onComplete, onOpen }: { option: StepOption; step: RoadmapStep; questStatus?: "started" | "completed"; busy: boolean; onStart: () => void; onComplete: () => void; onOpen: () => void }) {
+  const unavailable = step.status === "locked" || Boolean(option.blocked_reason);
+  const done = questStatus === "completed";
+  return <article className={`rounded-2xl border p-4 ${done ? "border-[#8bdab2]/50 bg-[#dff7eb]" : unavailable ? "border-white/10 bg-white/[.035] opacity-65" : "border-white/10 bg-white/[.07]"}`}>
+    <div className="flex items-start justify-between gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-[#9fcaff]"><Icon>{resourceIcon[option.kind] ?? "school"}</Icon></span><span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold text-white/70">{option.kind_label}</span></div>
+    <h4 className="mt-4 text-sm font-bold leading-snug text-white">{option.title}</h4>
+    <p className="mt-2 text-xs text-white/60">{option.est_hours ?? "—"} ชม. · {option.cost_baht ? `${option.cost_baht.toLocaleString()} บาท` : "ไม่มีค่าใช้จ่าย"}</p>
+    {option.blocked_reason && <p className="mt-3 text-xs text-[#ffd2cc]">🔒 {option.blocked_reason}</p>}
+    {done && <p className="mt-3 text-xs font-semibold text-[#1e6a47]">✓ Quest completed — เพิ่มผลงานเพื่อยืนยันทักษะต่อได้</p>}
+    <div className="mt-4 flex gap-2"><button type="button" onClick={onOpen} className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10">รายละเอียด</button>{!unavailable && !done && questStatus !== "started" && <button type="button" disabled={busy} onClick={onStart} className="rounded-lg bg-[#78b7ff] px-3 py-2 text-xs font-bold text-[#062142] disabled:opacity-60">เริ่ม Quest</button>}{!unavailable && !done && questStatus === "started" && <button type="button" disabled={busy} onClick={onComplete} className="rounded-lg bg-[#8bdab2] px-3 py-2 text-xs font-bold text-[#0a3221] disabled:opacity-60">ทำเสร็จแล้ว</button>}</div>
+  </article>;
 }
 
 export default function RoadmapPage() {
   const router = useRouter();
   const [data, setData] = useState<RoadmapResponse | null>(null);
+  const [quests, setQuests] = useState<QuestList | null>(null);
+  const [build, setBuild] = useState<CharacterBuild | null>(null);
+  const [activeSkillId, setActiveSkillId] = useState<string | null>(null);
   const [error, setError] = useState("");
-  useEffect(() => { const uid = session.read(); if (!uid) { Promise.resolve().then(() => setError("ยังไม่มีข้อมูลผู้ใช้ กรุณาเลือกอาชีพเป้าหมายก่อน")); return; } api.roadmap(uid, session.readTarget()).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : "โหลด Roadmap ไม่สำเร็จ")); }, []);
+  const [busyResource, setBusyResource] = useState("");
+  const [savingBuild, setSavingBuild] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  return <div className="bg-background text-on-background min-h-screen lg:h-screen lg:overflow-hidden flex pb-20 lg:pb-0">
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      setUserId(session.read());
+      setHydrated(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    Promise.all([api.roadmap(userId, session.readTarget()), api.quests(userId), api.characterBuild(userId)])
+      .then(([roadmap, questData, character]) => {
+        if (!alive) return;
+        setData(roadmap); setQuests(questData); setBuild(character.build);
+        setActiveSkillId(roadmap.steps.find((step) => step.status === "current")?.skill_id ?? roadmap.steps[0]?.skill_id ?? null);
+      })
+      .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : "โหลด Roadmap ไม่สำเร็จ"));
+    return () => { alive = false; };
+  }, [userId]);
+
+  const activeStep = useMemo(() => data?.steps.find((step) => step.skill_id === activeSkillId) ?? data?.steps[0] ?? null, [data, activeSkillId]);
+  const questByResource = useMemo(() => new Map((quests?.quests ?? []).map((quest) => [quest.resource_id, quest.status])), [quests]);
+  const questDone = quests?.counts.completed ?? 0;
+  const questStarted = quests?.counts.started ?? 0;
+
+  async function refreshQuests() {
+    if (!userId) return;
+    setQuests(await api.quests(userId));
+  }
+
+  async function startQuest(resourceId: string) {
+    if (!userId) return;
+    setBusyResource(resourceId); setNotice("");
+    try { await api.startQuest(resourceId, userId); await refreshQuests(); setNotice("Quest เริ่มแล้ว! บันทึกความคืบหน้าของคุณไว้ให้แล้ว"); }
+    catch (e) { setError(e instanceof Error ? e.message : "เริ่ม Quest ไม่สำเร็จ"); }
+    finally { setBusyResource(""); }
+  }
+
+  async function completeQuest(resourceId: string) {
+    if (!userId) return;
+    setBusyResource(resourceId); setNotice("");
+    try { const result = await api.completeQuest(resourceId, userId); await refreshQuests(); setNotice(result.note); }
+    catch (e) { setError(e instanceof Error ? e.message : "บันทึก Quest ไม่สำเร็จ"); }
+    finally { setBusyResource(""); }
+  }
+
+  async function chooseBuild(choice: (typeof builds)[number]) {
+    if (!userId) return;
+    setSavingBuild(true); setNotice("");
+    try {
+      const saved = await api.saveCharacterBuild({ user_id: userId, archetype: choice.value, playstyle: choice.playstyle, intensity: "steady", completed_missions: 4 });
+      setBuild(saved); setNotice(`เลือก ${choice.title} build แล้ว — เปลี่ยนได้ตลอดเวลา`);
+    } catch (e) { setError(e instanceof Error ? e.message : "บันทึก Character Build ไม่สำเร็จ"); }
+    finally { setSavingBuild(false); }
+  }
+
+  return <div className="min-h-screen bg-[#061323] text-white lg:flex">
     <WorkspaceSidebar active="roadmap" variant="graph" />
-    <main className="flex-1 h-full overflow-y-auto bg-surface relative">
-      <header className="lg:hidden flex justify-between items-center h-16 px-gutter border-b border-border-low bg-surface-bg/90 backdrop-blur-md sticky top-0 z-40"><span className="font-headline-md text-xl font-bold text-primary">SIIT Roadmap</span><button onClick={() => router.push("/targets")}><Icon>add</Icon></button></header>
-      <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter py-stack-lg pb-32">
+    <main className="min-w-0 flex-1 pb-24 lg:pb-0">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#061323]/90 px-5 backdrop-blur lg:hidden"><span className="text-lg font-bold">SIIT <span className="text-[#78b7ff]">QUEST</span></span><button onClick={() => router.push("/targets")} className="text-sm text-[#9fcaff]">เปลี่ยนเป้าหมาย</button></header>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-9 lg:px-10">
+        {hydrated && !userId && <div className="mb-5"><InlineNotice tone="error">ยังไม่มีข้อมูลผู้ใช้ กรุณาเลือกอาชีพเป้าหมายก่อน <button onClick={() => router.push("/targets")} className="underline font-semibold">เลือกอาชีพ</button></InlineNotice></div>}
         {error && <div className="mb-5"><InlineNotice tone="error">{error} <button onClick={() => router.push("/targets")} className="underline font-semibold">เลือกอาชีพ</button></InlineNotice></div>}
-        {!data && !error && <p className="py-24 text-center text-text-subtle">กำลังคำนวณเส้นทางจากข้อมูลของคุณ…</p>}
+        {!data && !error && (!hydrated || userId) && <div className="grid min-h-[65vh] place-items-center text-center text-white/65"><div><Icon className="text-5xl animate-pulse text-[#78b7ff]">hub</Icon><p className="mt-4">กำลังสร้าง Skill Tree ของคุณ…</p></div></div>}
         {data && <>
-          <section className="relative overflow-hidden rounded-3xl bg-[#0d2543] text-white p-6 md:p-9 shadow-[0_18px_48px_rgba(12,39,74,.18)]"><div className="absolute -right-16 -top-20 w-72 h-72 rounded-full border border-white/10" aria-hidden="true" /><div className="absolute right-[20%] bottom-[-100px] w-64 h-64 rounded-full bg-primary/25 blur-3xl" aria-hidden="true" /><div className="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6"><div><p className="text-xs font-bold tracking-[.16em] text-primary-fixed">YOUR CAREER QUEST</p><h1 className="mt-3 font-display-lg text-3xl md:text-5xl font-bold">{data.target.title_en}</h1><p className="mt-3 max-w-2xl text-white/70">{data.target.summary}</p><div className="mt-6 flex flex-wrap gap-3"><span className="rounded-xl bg-white/10 px-3 py-2 text-sm"><strong>{data.steps_done}</strong> / {data.total_steps} nodes unlocked</span><span className="rounded-xl bg-white/10 px-3 py-2 text-sm">CV evidence {data.evidence_summary.from_cv} skills</span></div></div><div className="rounded-2xl bg-white text-[#10213b] p-5 min-w-[280px] shadow-xl"><p className="text-xs font-bold tracking-[.12em] text-primary">NEXT QUEST</p><h2 className="mt-2 text-xl font-bold">{data.steps.find((step) => step.status === "current")?.name_th ?? "เลือก quest แรกของคุณ"}</h2><p className="mt-2 text-sm text-text-subtle">เริ่มจาก node นี้ แล้วเส้นทางถัดไปจะค่อย ๆ ปลดล็อก</p><button onClick={() => document.getElementById("quest-list")?.scrollIntoView({ behavior: "smooth" })} className="mt-4 w-full rounded-xl bg-primary text-white py-2.5 font-semibold flex justify-center gap-2">ดู quest ที่ทำได้<Icon>arrow_forward</Icon></button></div></div></section>
-          <QuestMap steps={data.steps} />
-          <div className="mt-6"><InlineNotice>{data.evidence_summary.note} — จาก CV {data.evidence_summary.from_cv} ทักษะ · ประเมินเอง {data.evidence_summary.self_reported} ทักษะ</InlineNotice></div>
-          <section id="quest-list" className="mt-stack-md bg-surface-bg border border-border-low rounded-xl p-4 md:p-stack-lg shadow-sm relative"><div className="flex items-center gap-2 mb-stack-lg text-text-subtle"><Icon className="text-[20px]">map</Icon><span className="font-label-sm text-label-sm tracking-widest uppercase text-outline">QUEST LOG · เลือก Course เพื่อดู skill ที่จะปลดล็อก</span></div><div className="relative pl-1 md:pl-8">{data.steps.map((step, index) => <StepCard key={step.skill_id} step={step} last={index === data.steps.length - 1} onOpenCourse={(resourceId) => router.push(`/courses/${encodeURIComponent(resourceId)}`)} />)}</div></section>
+          <section className="relative overflow-hidden rounded-[30px] border border-[#254c70] bg-gradient-to-br from-[#10345b] via-[#092540] to-[#061a31] p-6 shadow-[0_30px_80px_rgba(0,0,0,.28)] md:p-10">
+            <div className="pointer-events-none absolute -right-14 -top-20 h-80 w-80 rounded-full border border-[#89c6ff]/20" /><div className="pointer-events-none absolute bottom-[-135px] left-[38%] h-64 w-64 rounded-full bg-[#e89437]/20 blur-3xl" />
+            <div className="relative grid gap-8 xl:grid-cols-[1.25fr_.75fr] xl:items-end">
+              <div><p className="text-xs font-bold tracking-[.2em] text-[#9fcaff]">CAREER JOURNEY · LEVEL 01</p><h1 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">{data.target.title_th}<span className="mt-2 block text-lg font-medium text-white/55 md:text-xl">{data.target.title_en}</span></h1><p className="mt-5 max-w-2xl leading-relaxed text-white/72">{data.target.summary} ทุก node คือทักษะที่พาไปสู่งานจริงได้ — เริ่มจากจุดที่เปิดอยู่ แล้วค่อยปลดล็อกเส้นต่อไป</p><div className="mt-6 flex flex-wrap gap-3"><span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm"><strong className="text-[#9fcaff]">{data.steps_done}/{data.total_steps}</strong> skill evidence</span><span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm"><strong className="text-[#8bdab2]">{questDone}</strong> quest completed</span><span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm">coverage <strong>{data.coverage}%</strong></span></div></div>
+              <div className="rounded-2xl border border-white/10 bg-[#041526]/55 p-5 backdrop-blur"><div className="flex items-center justify-between text-xs font-bold tracking-[.14em] text-[#9fcaff]"><span>QUEST PROGRESS</span><span>{questDone}/{Math.max(data.total_steps, 1)}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-[#78b7ff] to-[#8bdab2] transition-all" style={{ width: `${progressPercent(questDone, data.total_steps)}%` }} /></div><p className="mt-4 text-sm leading-relaxed text-white/65">เริ่มแล้ว {questStarted} quest · ทำเสร็จแล้ว {questDone} quest <span className="text-white/40">— การทำเสร็จเป็นความคืบหน้า ยังไม่แทนหลักฐานทักษะ</span></p><button onClick={() => document.getElementById("active-quest")?.scrollIntoView({ behavior: "smooth" })} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#78b7ff] px-4 py-2.5 text-sm font-bold text-[#062142]">ไปที่ Next Quest <Icon className="text-base">arrow_downward</Icon></button></div>
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-[#25415c] bg-[#0b2036] p-5 md:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[11px] font-bold tracking-[.16em] text-[#f7d18a]">CHARACTER BUILD</p><h2 className="mt-1 text-xl font-bold">{build ? `${builds.find((item) => item.value === build.archetype)?.title ?? build.archetype} · ${build.playstyle} style` : "เลือกสไตล์การเติบโตของคุณ"}</h2><p className="mt-1 text-sm text-white/60">เป็น preference เพื่อปรับประสบการณ์บนเว็บ ไม่ใช่การประเมินทักษะ</p></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{builds.map((choice) => <button key={choice.value} type="button" disabled={savingBuild} onClick={() => chooseBuild(choice)} className={`rounded-xl border px-3 py-2 text-left transition hover:-translate-y-0.5 disabled:opacity-60 ${build?.archetype === choice.value ? choice.color : "border-white/10 bg-white/5 hover:border-white/30"}`}><Icon className="text-lg text-[#9fcaff]">{choice.icon}</Icon><span className="mt-1 block text-xs font-bold">{choice.title}</span><span className="block text-[10px] text-white/50">{choice.subtitle}</span></button>)}</div></div></section>
+
+          {notice && <div className="mt-5"><InlineNotice>{notice}</InlineNotice></div>}
+          <div className="mt-6"><SkillTree steps={data.steps} activeId={activeSkillId} onSelect={setActiveSkillId} /></div>
+
+          {activeStep && <section id="active-quest" className="mt-6 scroll-mt-24 rounded-[28px] border border-[#2a5277] bg-[#0c2743] p-5 md:p-8"><div className="flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-start md:justify-between"><div><p className="text-[11px] font-bold tracking-[.17em] text-[#9fcaff]">ACTIVE NODE · {String(activeStep.order_no).padStart(2, "0")}</p><h2 className="mt-2 text-2xl font-bold md:text-3xl">{activeStep.name_th}</h2><p className="mt-3 text-white/65">จากระดับ {activeStep.current_level} ไปถึงระดับ {activeStep.target_level}{activeStep.unlock_count > 0 ? ` · ปลดล็อกต่อได้ ${activeStep.unlock_count} skill` : ""}</p></div><span className={`w-fit rounded-full px-3 py-2 text-xs font-bold ${activeStep.status === "locked" ? "bg-white/10 text-white/55" : activeStep.status === "flexible" ? "bg-[#f4bb61]/20 text-[#f7d18a]" : "bg-[#78b7ff]/20 text-[#9fcaff]"}`}>{statusStyle[activeStep.status].label}</span></div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{activeStep.options.map((option) => <ResourceQuest key={option.resource_id} option={option} step={activeStep} questStatus={questByResource.get(option.resource_id)} busy={busyResource === option.resource_id} onStart={() => startQuest(option.resource_id)} onComplete={() => completeQuest(option.resource_id)} onOpen={() => router.push(`/courses/${encodeURIComponent(option.resource_id)}`)} />)}</div>
+            {activeStep.options.length === 0 && <p className="text-sm text-white/60">ยังไม่มีตัวเลือกการเรียนสำหรับ node นี้</p>}
+          </section>}
+
+          <section className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_.9fr]"><div className="rounded-2xl border border-white/10 bg-[#0b2036] p-5"><p className="text-[11px] font-bold tracking-[.16em] text-[#9fcaff]">CAREER SIGNAL</p><h2 className="mt-2 text-xl font-bold">เรียนจบสายนี้ ไปทำงานอะไรได้บ้าง?</h2><p className="mt-3 leading-relaxed text-white/65">ทุก Quest ที่คุณเลือกจะสะสมเป็นหลักฐานการลงมือทำ สำหรับต่อยอดไปยังบทบาท <strong className="text-white">{data.target.title_th}</strong> และทักษะที่ทีมวิศวกรรม/ไอทีใช้จริง เช่น การแก้ปัญหาเป็นระบบ การสื่อสารงาน และการสร้างสิ่งที่ตรวจสอบได้</p><p className="mt-4 text-sm text-[#8bdab2]">เริ่มทีละ node ก็พอ — ความต่อเนื่องสำคัญกว่าการเก่งทุกอย่างตั้งแต่วันแรก</p></div><div className="rounded-2xl border border-white/10 bg-[#0b2036] p-5"><p className="text-[11px] font-bold tracking-[.16em] text-[#f7d18a]">BADGES EARNED</p><div className="mt-4 flex flex-wrap gap-2">{quests?.badges.length ? quests.badges.map((badge) => <span key={badge.id} title={badge.description} className="inline-flex items-center gap-2 rounded-xl border border-[#f4bb61]/30 bg-[#f4bb61]/10 px-3 py-2 text-sm text-[#ffe1a3]"><Icon className="text-base">workspace_premium</Icon>{badge.label}</span>) : <p className="text-sm text-white/55">เริ่ม Quest แรกเพื่อรับ badge แรกของคุณ ✦</p>}</div><p className="mt-4 text-xs leading-relaxed text-white/45">Badge เป็น feedback ของการลงมือทำ ไม่ใช่ใบรับรองความสามารถ</p></div></section>
+          <div className="mt-6"><InlineNotice>{data.evidence_summary.note} — CV {data.evidence_summary.from_cv} ทักษะ · ประเมินเอง {data.evidence_summary.self_reported} ทักษะ</InlineNotice></div>
         </>}
       </div>
     </main>

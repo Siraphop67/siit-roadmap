@@ -253,6 +253,8 @@ export type ResourceDetail = {
   min_year: number;
   proof_of_done: string;
   data_status: string;
+  /** ความคืบหน้าของ quest นี้ — เป็นการบันทึกการลงมือทำ ไม่ใช่หลักฐานทักษะ */
+  quest: { status: "started" | "completed" | null; can_start: boolean; can_complete: boolean } | null;
   teaches: {
     skill_id: string;
     name_th: string;
@@ -329,6 +331,32 @@ export type RoadmapListResponse = {
   /** ไม่ว่าง = `roadmaps` ว่าง และนี่คือข้อความที่ต้องขึ้นจอ ห้ามโชว์รายการเปล่าเงียบ ๆ */
   empty_message: string;
   note: string;
+};
+
+// ══════════════════════ CHARACTER BUILD + QUESTS ══════════════════════
+
+/** Preference ที่ผู้ใช้เลือกใน flow แบบ Character Creation — ไม่ใช่ skill evidence */
+export type CharacterBuild = {
+  archetype: "builder" | "analyst" | "maker" | "optimizer";
+  playstyle: "explore" | "solve" | "create" | "improve";
+  intensity: "light" | "steady" | "challenge";
+  completed_missions: number;
+};
+
+export type QuestProgress = {
+  resource_id: string;
+  status: "started" | "completed";
+  title: string;
+  started_at: string;
+  completed_at: string | null;
+};
+
+export type QuestBadge = { id: string; label: string; description: string };
+
+export type QuestList = {
+  quests: QuestProgress[];
+  counts: { started: number; completed: number };
+  badges: QuestBadge[];
 };
 
 // ══════════════════════ กราฟทักษะ ══════════════════════
@@ -781,7 +809,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-function json<T>(path: string, method: "POST" | "DELETE", body?: unknown): Promise<T> {
+function json<T>(path: string, method: "POST" | "PUT" | "DELETE", body?: unknown): Promise<T> {
   return call<T>(path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -920,6 +948,25 @@ export const api = {
   /** อาชีพที่เคยเปิด roadmap แล้ว เรียงจากล่าสุด — ไม่ใช่รายการที่กดบันทึกไว้ */
   roadmaps: (userId: string) =>
     call<RoadmapListResponse>(`/roadmaps${q({ user_id: userId })}`),
+
+  // ── Character build + quest progress ──
+  characterBuild: (userId: string) =>
+    call<{ build: CharacterBuild | null }>(`/character-build${q({ user_id: userId })}`),
+
+  saveCharacterBuild: (body: CharacterBuild & { user_id: string }) =>
+    json<CharacterBuild>("/character-build", "PUT", body),
+
+  quests: (userId: string) => call<QuestList>(`/quests${q({ user_id: userId })}`),
+
+  startQuest: (resourceId: string, userId: string) =>
+    json<{ resource_id: string; status: "started" | "completed"; badges: QuestBadge[] }>(
+      `/quests/${encodeURIComponent(resourceId)}/start`, "POST", { user_id: userId },
+    ),
+
+  completeQuest: (resourceId: string, userId: string) =>
+    json<{ resource_id: string; status: "completed"; badges: QuestBadge[]; note: string }>(
+      `/quests/${encodeURIComponent(resourceId)}/complete`, "POST", { user_id: userId },
+    ),
 
   /** หน้า course จาก roadmap — targetId ทำให้ API อธิบายผลต่อเส้นทางที่เลือกได้ */
   resource: (resourceId: string, userId?: string | null, targetId?: string | null) =>

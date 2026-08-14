@@ -22,7 +22,7 @@ export default function PortfolioPage() {
     if (!consent) return setError("กรุณายินยอมให้ระบบประมวลผลเอกสารก่อนเริ่มวิเคราะห์");
     if (mode === "pdf" && !file) return setError("กรุณาเลือกไฟล์ PDF");
     if (mode === "text" && text.trim().length < 20) return setError("กรุณาวางข้อความอย่างน้อย 20 ตัวอักษร");
-    if ((mode === "github" || mode === "linkedin") && !url.trim()) return setError("กรุณาใส่ลิงก์");
+    if ((mode === "github" || mode === "linkedin") && !url.trim()) return setError("กรุณากรอกลิงก์");
     setBusy(true);
     try {
       const uid = await ensureSession("known");
@@ -35,14 +35,14 @@ export default function PortfolioPage() {
             : await api.portfolioLinkedin({ user_id: uid, url, text, consent: true });
       session.writeDocument(result.document_id);
       router.push(`/portfolio/review?id=${encodeURIComponent(result.document_id)}`);
-    } catch (e) { setError(e instanceof Error ? e.message : "วิเคราะห์ผลงานไม่สำเร็จ"); }
+    } catch (e) { setError(e instanceof Error ? e.message : "วิเคราะห์ผลงานไม่ได้ในตอนนี้"); }
     finally { setBusy(false); }
   }
 
   const options: { id: Mode; icon: string; title: string; description: string }[] = [
-    { id: "text", icon: "description", title: "วางข้อความ (Text)", description: "วางข้อความจาก Resume หรือรายละเอียดโปรเจกต์" },
-    { id: "github", icon: "code", title: "เชื่อมต่อ GitHub", description: "ดึงข้อมูลทักษะจาก Repository ของคุณ" },
-    { id: "linkedin", icon: "work", title: "นำเข้าจาก LinkedIn", description: "วางข้อความโปรไฟล์พร้อมลิงก์เพื่ออ้างอิง" },
+    { id: "text", icon: "description", title: "วางข้อความ", description: "วางข้อความจาก CV หรือรายละเอียดโครงการ" },
+    { id: "github", icon: "code", title: "เชื่อมต่อ GitHub", description: "ดึงข้อมูลทักษะจากคลังโค้ด (repository) ของคุณ" },
+    { id: "linkedin", icon: "work", title: "นำเข้าจาก LinkedIn", description: "วางข้อความโปรไฟล์พร้อมลิงก์เพื่อใช้อ้างอิง" },
   ];
 
   return (
@@ -52,8 +52,8 @@ export default function PortfolioPage() {
         <WorkspaceSidebar active="portfolio" />
         <main className="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-gutter py-stack-lg flex flex-col gap-stack-lg">
           <section className="mb-stack-md">
-            <h1 className="font-headline-lg text-[28px] md:text-headline-lg font-bold text-on-surface mb-stack-sm">วิเคราะห์ทักษะจากตัวตนของคุณ</h1>
-            <p className="font-body-lg text-body-lg text-text-subtle max-w-3xl">ระบบจะวิเคราะห์ทักษะของคุณจากประสบการณ์ทำงานและผลงานจริง (Resume/CV หรือ Portfolio) เพื่อค้นหาจุดแข็งที่ซ่อนอยู่ และนำไปใช้วางแผน Roadmap ที่เหมาะสมกับคุณที่สุด</p>
+            <h1 className="font-headline-lg text-[28px] md:text-headline-lg font-bold text-on-surface mb-stack-sm">วิเคราะห์ทักษะจากผลงานของคุณ</h1>
+            <p className="font-body-lg text-body-lg text-text-subtle max-w-3xl">เราอ่านทักษะของคุณจากประสบการณ์และผลงานจริง (CV หรือแฟ้มผลงาน) เพื่อหาจุดแข็งที่คุณอาจมองข้าม แล้วใช้วางเส้นทางที่เหมาะกับคุณที่สุด</p>
           </section>
           {error && <InlineNotice tone="error">{error}</InlineNotice>}
           <section className="bg-surface-bg border border-border-low rounded-xl p-5 md:p-stack-lg shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
@@ -69,15 +69,15 @@ export default function PortfolioPage() {
               <div className="flex flex-col gap-stack-sm">{options.map((item) => <button key={item.id} type="button" onClick={() => setMode(item.id)} className={`flex items-center gap-3 p-4 border rounded-xl hover:border-primary transition-all text-left ${mode === item.id ? "border-primary bg-primary-fixed/30" : "border-border-low bg-white"}`}><Icon className="text-secondary">{item.icon}</Icon><div><h3 className="font-label-sm text-label-sm text-on-surface">{item.title}</h3><p className="text-xs text-text-subtle">{item.description}</p></div></button>)}</div>
             </div>
 
-            {mode === "text" && <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full min-h-44 border border-border-low rounded-lg p-4 focus:outline-none focus:border-primary" placeholder="วางข้อความจาก Resume, CV หรือรายละเอียดโปรเจกต์ของคุณ…" />}
+            {mode === "text" && <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full min-h-44 border border-border-low rounded-lg p-4 focus:outline-none focus:border-primary" placeholder="วางข้อความจาก CV หรือรายละเอียดโครงการของคุณ" />}
             {mode === "github" && <input value={url} onChange={(e) => setUrl(e.target.value)} className="w-full border border-border-low rounded-lg p-3 focus:outline-none focus:border-primary" placeholder="https://github.com/username/repository" type="url" />}
             {mode === "linkedin" && <div className="grid gap-3"><input value={url} onChange={(e) => setUrl(e.target.value)} className="w-full border border-border-low rounded-lg p-3 focus:outline-none focus:border-primary" placeholder="https://linkedin.com/in/username" type="url"/><textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full min-h-36 border border-border-low rounded-lg p-4 focus:outline-none focus:border-primary" placeholder="เพื่อเคารพข้อกำหนดของ LinkedIn กรุณาคัดลอกข้อความโปรไฟล์มาวางที่นี่" /></div>}
 
-            <label className="mt-stack-md flex items-start gap-3 text-sm text-text-subtle cursor-pointer"><input checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 size-4 accent-primary" type="checkbox"/><span>ฉันยินยอมให้ SIIT Roadmap ประมวลผลเอกสารนี้เพื่อสกัดทักษะ และเข้าใจว่าฉันต้องตรวจยืนยันผลก่อนนำไปใช้</span></label>
-            <button onClick={submit} disabled={busy} className="mt-stack-md w-full md:w-auto bg-primary text-on-primary px-7 py-3 rounded-lg font-semibold hover:bg-primary-container disabled:opacity-60 transition-colors">{busy ? "กำลังวิเคราะห์…" : "วิเคราะห์ทักษะ"}</button>
-            <div className="mt-stack-md bg-surface-container-low border border-border-low rounded-lg p-stack-md flex items-start gap-3"><Icon className="text-primary mt-0.5">info</Icon><div><h4 className="font-label-sm text-label-sm text-on-surface mb-1">ความโปร่งใสในการวิเคราะห์</h4><p className="text-sm text-text-subtle">ทุกทักษะที่ระบบสกัดได้ จะถูกโยงกลับไปยังประโยคหรือแหล่งที่มาในเอกสารของคุณ เพื่อให้คุณตรวจสอบและยืนยันความถูกต้องได้เสมอ</p></div></div>
+            <label className="mt-stack-md flex items-start gap-3 text-sm text-text-subtle cursor-pointer"><input checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 size-4 accent-primary" type="checkbox"/><span>ฉันยินยอมให้ SIIT Roadmap ประมวลผลเอกสารนี้เพื่อสกัดทักษะ และเข้าใจว่าต้องตรวจยืนยันผลเองก่อนนำไปใช้</span></label>
+            <button onClick={submit} disabled={busy} className="mt-stack-md w-full md:w-auto bg-primary text-on-primary px-7 py-3 rounded-lg font-semibold hover:bg-primary-container disabled:opacity-60 transition-colors">{busy ? "กำลังวิเคราะห์" : "วิเคราะห์ทักษะ"}</button>
+            <div className="mt-stack-md bg-surface-container-low border border-border-low rounded-lg p-stack-md flex items-start gap-3"><Icon className="text-primary mt-0.5">info</Icon><div><h4 className="font-label-sm text-label-sm text-on-surface mb-1">ความโปร่งใสในการวิเคราะห์</h4><p className="text-sm text-text-subtle">ทุกทักษะที่เราสกัดได้ จะโยงกลับไปยังประโยคต้นทางในเอกสารของคุณเสมอ คุณจึงตรวจสอบและยืนยันเองได้ทุกข้อ</p></div></div>
           </section>
-          <div className="bg-surface-muted border border-border-low rounded-xl p-stack-md flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary"><Icon>tune</Icon></div><div><h4 className="font-label-sm text-label-sm text-on-surface">บริบทการสร้าง Roadmap</h4><p className="text-xs text-text-subtle">ระบบจะพิจารณา ชั้นปี, GPA, เวลาที่จัดสรรได้ และทักษะที่ยืนยันแล้วร่วมกัน</p></div></div></div>
+          <div className="bg-surface-muted border border-border-low rounded-xl p-stack-md flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary"><Icon>tune</Icon></div><div><h4 className="font-label-sm text-label-sm text-on-surface">บริบทที่ใช้สร้างเส้นทางพัฒนา</h4><p className="text-xs text-text-subtle">ระบบจะพิจารณาชั้นปี GPA เวลาที่จัดสรรได้ และทักษะที่ยืนยันแล้วประกอบกัน</p></div></div></div>
         </main>
       </div>
       <div className="lg:hidden"><SiteFooter /></div>

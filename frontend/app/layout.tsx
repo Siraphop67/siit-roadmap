@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIIT Roadmap — Find your path to the future",
+  title: "SIIT Roadmap — เส้นทางพัฒนาอาชีพสำหรับนักศึกษา SIIT",
   description:
-    "แผนที่อาชีพเฉพาะบุคคลสำหรับนักศึกษา SIIT จากความสนใจ ทักษะ และผลงานจริง",
+    "เส้นทางพัฒนาอาชีพเฉพาะบุคคลสำหรับนักศึกษา SIIT วิเคราะห์จากความสามารถจริงของคุณ",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

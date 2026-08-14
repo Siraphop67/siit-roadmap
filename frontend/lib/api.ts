@@ -19,9 +19,9 @@ const BASE =
 /** ระดับทักษะตรงกับ `settings.max_level` ฝั่ง backend — แก้ที่นั่นแล้วต้องมาแก้ที่นี่ด้วย */
 export const MAX_LEVEL = 3;
 export const LEVEL_LABELS: Record<number, string> = {
-  1: "รู้จัก",
-  2: "ทำได้เมื่อมีคนแนะ",
-  3: "ทำเองได้",
+  1: "มีความรู้เบื้องต้น",
+  2: "ปฏิบัติได้เมื่อมีผู้แนะนำ",
+  3: "ปฏิบัติได้ด้วยตนเอง",
 };
 
 // ══════════════════════ META ══════════════════════
@@ -744,7 +744,7 @@ async function readError(res: Response): Promise<{ message: string; detail?: unk
     if (typeof detail === "string") return { message: detail, detail };
     // FastAPI ส่ง array เมื่อ validation ของ pydantic ไม่ผ่าน — ผู้ใช้ไม่ได้อยากอ่าน JSON
     if (Array.isArray(detail)) {
-      return { message: "ข้อมูลที่ส่งไปยังไม่ครบหรือผิดรูปแบบ", detail };
+      return { message: "ข้อมูลที่ส่งยังไม่ครบหรือรูปแบบไม่ถูกต้อง", detail };
     }
     // ก้อนที่เราส่งเอง เช่น {errors: [...], warnings: [...]} จากฟอร์มบริษัท
     if (detail && typeof detail === "object") {
@@ -753,16 +753,16 @@ async function readError(res: Response): Promise<{ message: string; detail?: unk
         message:
           Array.isArray(errors) && errors.length
             ? String(errors[0])
-            : "ข้อมูลที่กรอกยังไม่ผ่านการตรวจ",
+            : "ข้อมูลที่กรอกไม่ผ่านการตรวจสอบ",
         detail,
       };
     }
   } catch {
     /* body ไม่ใช่ JSON — ตกไปใช้ข้อความตามรหัสสถานะ */
   }
-  if (res.status === 404) return { message: "ไม่พบข้อมูลที่ขอ" };
-  if (res.status >= 500) return { message: "ระบบฝั่งเซิร์ฟเวอร์มีปัญหา ลองใหม่อีกครั้ง" };
-  return { message: `เรียก API ไม่สำเร็จ (${res.status})` };
+  if (res.status === 404) return { message: "ไม่พบข้อมูลที่ร้องขอ" };
+  if (res.status >= 500) return { message: "ระบบขัดข้องชั่วคราว ลองใหม่อีกครั้ง" };
+  return { message: `ไม่สามารถเรียกใช้ API ได้ (${res.status})` };
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -771,7 +771,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(`${BASE}${path}`, { ...init, cache: "no-store" });
   } catch {
     // แยกกรณี "ยิงไม่ถึง" ออกจาก "ยิงถึงแล้วตอบ error" — เจอบ่อยตอนลืมเปิด backend
-    throw new ApiError(`ต่อกับ API ไม่ได้ที่ ${BASE} — เปิด backend แล้วหรือยัง (make backend)`, 0);
+    throw new ApiError(`ไม่สามารถเชื่อมต่อกับ API ที่ ${BASE} ได้ — กรุณาตรวจสอบว่าเปิดระบบ backend แล้วหรือไม่ (make backend)`, 0);
   }
   if (!res.ok) {
     const { message, detail } = await readError(res);

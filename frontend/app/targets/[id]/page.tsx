@@ -18,9 +18,9 @@ import { Card, DataNote, ErrorState, Loading, Page } from "@/components/ui";
 import { api, type TargetDetail } from "@/lib/api";
 
 const SOURCE_LABEL = {
-  both: { text: "ประกาศงานจริงยืนยัน", cls: "border-accent/40 text-accent" },
-  postings: { text: "จากประกาศงานจริง", cls: "border-accent/40 text-accent" },
-  curated: { text: "ทีมเขียนเอง", cls: "border-line-strong text-faint" },
+  both: { text: "ยืนยันจากประกาศรับสมัครงาน", cls: "border-accent/40 text-accent" },
+  postings: { text: "จากประกาศรับสมัครงาน", cls: "border-accent/40 text-accent" },
+  curated: { text: "ทีมงานรวบรวม", cls: "border-line-strong text-faint" },
 } as const;
 
 export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
@@ -32,7 +32,7 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
     api
       .target(id)
       .then(setT)
-      .catch((e) => setFailed(e instanceof Error ? e.message : "โหลดไม่สำเร็จ"));
+      .catch((e) => setFailed(e instanceof Error ? e.message : "ไม่สามารถโหลดข้อมูลอาชีพได้"));
   }, [id]);
 
   if (failed) return <ErrorState message={failed} />;
@@ -44,7 +44,7 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
     <Page eyebrow={t.sector_label} title={t.title_th} lede={t.summary}>
       <Card>
         <h2 className="text-[0.8rem] font-semibold uppercase tracking-wider text-faint">
-          วันหนึ่งของคนทำงานนี้
+          วันหนึ่งของคนทำงานสายนี้
         </h2>
         <p className="mt-2 leading-relaxed">{t.day_in_the_life}</p>
       </Card>
@@ -53,7 +53,7 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
         {[
           ["สาขาที่รับ", t.field_whitelist.join(" · ")],
           ["วุฒิขั้นต่ำ", t.min_education ?? "ไม่ระบุ"],
-          ["เกรดขั้นต่ำ", t.min_gpa ? t.min_gpa.toFixed(2) : "ไม่ระบุ"],
+          ["เกรดเฉลี่ยขั้นต่ำ", t.min_gpa ? t.min_gpa.toFixed(2) : "ไม่ระบุ"],
         ].map(([k, v]) => (
           <div key={k} className="border-l-2 border-line pl-4">
             <dt className="text-faint">{k}</dt>
@@ -64,12 +64,12 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
 
       <section className="mt-9">
         <h2 className="text-[1.1rem] font-bold">
-          ต้องแสดงความสามารถ {t.requirements.length} เรื่อง
+          ต้องพิสูจน์ให้ได้ {t.requirements.length} ทักษะ
         </h2>
         <p className="mt-1 text-[0.92rem] text-muted">
           {verified > 0
-            ? `${verified} เรื่องยืนยันได้จากประกาศงานจริง`
-            : "ทั้งหมดยังเป็นชุดที่ทีมเขียนขึ้นเอง ยังไม่มีประกาศงานจริงยืนยัน"}
+            ? `ยืนยันประกาศรับสมัครงานแล้ว ${verified} ทักษะ`
+            : "ทั้งหมดเป็นข้อมูลที่ทีมงานรวบรวมขึ้น ยังไม่มีประกาศรับสมัครงานครับ"}
         </p>
 
         <ul className="mt-4 space-y-2">
@@ -86,7 +86,7 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
                   className={`rounded-full border px-2.5 py-0.5 text-[0.75rem] ${src.cls}`}
                 >
                   {src.text}
-                  {r.appears_in_n_postings > 0 && ` · ${r.appears_in_n_postings} ประกาศ`}
+                  {r.appears_in_n_postings > 0 && ` · ${r.appears_in_n_postings} ฉบับ`}
                 </span>
               </li>
             );
@@ -99,13 +99,13 @@ export default function TargetDetailPage(props: PageProps<"/targets/[id]">) {
           href="/targets"
           className="rounded-lg border border-line-strong px-4 py-2.5 text-[0.93rem] font-semibold transition hover:border-accent hover:text-accent"
         >
-          ← กลับไปเลือกอาชีพ
+          ← กลับไปเลือกอาชีพเป้าหมาย
         </Link>
       </div>
 
       <DataNote>
         {t.salary_note}
-        {t.onet_soc_code && ` · โครงสร้างอาชีพอ้างอิง O*NET ${t.onet_soc_code}`}
+        {t.onet_soc_code && ` · โครงสร้างอาชีพที่่อ้างอิง O*NET ${t.onet_soc_code}`}
       </DataNote>
     </Page>
   );

@@ -132,7 +132,7 @@ export default function ProfilePage() {
       setSaved(true);
       setReload((n) => n + 1);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ");
+      setError(e instanceof Error ? e.message : "ไม่สามารถบันทึกข้อมูลได้");
     } finally {
       setSaving(false);
     }
@@ -155,7 +155,7 @@ export default function ProfilePage() {
         setError("");
       })
       .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : "โหลดข้อมูลของคุณไม่สำเร็จ");
+        if (alive) setError(e instanceof Error ? e.message : "ไม่สามารถโหลดข้อมูลของคุณได้");
       });
     api
       .roadmaps(uid)
@@ -179,7 +179,7 @@ export default function ProfilePage() {
       setRestored(value);
       setReload((n) => n + 1);
     } catch {
-      setError("ไม่พบรหัสนี้ในระบบ — ตรวจว่าคัดลอกมาครบทุกตัวอักษรหรือยัง");
+      setError("ไม่พบรหัสนี้ในระบบ กรุณาตรวจสอบว่าคัดลอกมาครบถ้วนทุกตัวอักษรแล้วหรือไม่");
     } finally {
       setRestoring(false);
     }
@@ -200,10 +200,10 @@ export default function ProfilePage() {
       <WorkspaceSidebar active="profile" />
       <main className="flex-1 min-w-0 px-margin-mobile md:px-gutter py-stack-lg max-w-3xl mx-auto w-full">
         <h1 className="text-headline-lg font-headline-lg font-bold text-text-main">
-          โปรไฟล์ของฉัน
+          ข้อมูลส่วนตัว
         </h1>
         <p className="text-body-md text-text-subtle mt-1">
-          เก็บไว้ให้แล้วว่าคุณทำอะไรไปบ้าง กลับมาเมื่อไหร่ก็ทำต่อจากจุดเดิมได้
+          ระบบบันทึกความคืบหน้าของคุณไว้แล้ว เมื่อกลับมาใช้งานอีกครั้งสามารถดำเนินการต่อจากจุดเดิมได้
         </p>
 
         {error && (
@@ -216,10 +216,10 @@ export default function ProfilePage() {
         {!uid && (
           <section className="mt-stack-lg p-gutter border border-border-low rounded-xl bg-surface-muted">
             <h2 className="font-semibold text-text-main mb-stack-sm">
-              เครื่องนี้ยังไม่มีข้อมูลของคุณ
+              อุปกรณ์นี้ยังไม่มีข้อมูลของคุณ
             </h2>
             <p className="text-sm text-text-subtle mb-stack-md">
-              ถ้าเคยใช้จากเครื่องอื่นและเก็บรหัสไว้ วางรหัสตรงนี้เพื่อดึงข้อมูลกลับมา
+              หากเคยใช้งานจากอุปกรณ์อื่นและเก็บรหัสไว้ กรุณาวางรหัสที่นี่เพื่อเรียกข้อมูลกลับคืน
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -233,7 +233,7 @@ export default function ProfilePage() {
                 disabled={!code.trim() || restoring}
                 className="px-4 py-2 bg-primary text-on-primary rounded-lg disabled:opacity-40"
               >
-                {restoring ? "กำลังตรวจรหัส…" : "ดึงข้อมูลกลับมา"}
+                {restoring ? "กำลังตรวจสอบรหัส" : "เรียกข้อมูลกลับคืน"}
               </button>
             </div>
             <Link href="/" className="inline-block mt-stack-md underline text-sm text-text-subtle">
@@ -248,7 +248,7 @@ export default function ProfilePage() {
             {state.next ? (
               <section className="mt-stack-lg p-gutter border border-primary rounded-xl bg-primary-fixed/40">
                 <p className="text-label-sm font-label-sm uppercase tracking-wider text-primary">
-                  ค้างไว้ตรงนี้
+                  ดำเนินการค้างไว้ที่ขั้นนี้
                 </p>
                 <h2 className="text-headline-md font-headline-md font-semibold text-text-main mt-1">
                   {state.next.title}
@@ -258,14 +258,14 @@ export default function ProfilePage() {
                   href={state.next.href}
                   className="inline-flex items-center gap-2 mt-stack-md px-4 py-2.5 bg-primary text-on-primary rounded-lg"
                 >
-                  ทำต่อจากตรงนี้ <Icon className="text-base">arrow_forward</Icon>
+                  ดำเนินการต่อจากขั้นนี้ <Icon className="text-base">arrow_forward</Icon>
                 </StepLink>
               </section>
             ) : (
               <section className="mt-stack-lg p-gutter border border-border-low rounded-xl bg-surface-muted">
-                <h2 className="font-semibold text-text-main">เดินครบทุกขั้นแล้ว</h2>
+                <h2 className="font-semibold text-text-main">ดำเนินการครบทุกขั้นแล้ว</h2>
                 <p className="text-sm text-text-subtle mt-1">
-                  ส่งผลงานเพิ่มหรือเลือกอาชีพอื่นได้ตลอด เส้นทางจะคำนวณใหม่ให้เอง
+                  คุณสามารถส่งผลงานเพิ่มเติมหรือเลือกอาชีพอื่นได้ตลอดเวลา ระบบจะคำนวณเส้นทางใหม่ให้โดยอัตโนมัติ
                 </p>
               </section>
             )}
@@ -307,8 +307,8 @@ export default function ProfilePage() {
             >
               <h2 className="font-semibold text-text-main mb-stack-sm">ข้อมูลพื้นฐาน</h2>
               <p className="text-sm text-text-subtle mb-stack-md">
-                ใช้กรองอาชีพที่สมัครไม่ได้จริง ๆ ออก และคัดตัวเลือกในเส้นทางให้พอดีกับเวลาและงบของคุณ
-                — กรอกเท่าที่อยากบอก เว้นว่างได้
+                ใช้สำหรับคัดกรองอาชีพที่ไม่สามารถสมัครได้ออก และคัดเลือกช่องทางการเรียนรู้ให้เหมาะสมกับเวลา
+                และงบประมาณของคุณ กรุณากรอกเท่าที่ต้องการเปิดเผย โดยสามารถเว้นว่างได้
               </p>
               {form && (
                 <div className="grid sm:grid-cols-2 gap-3">
@@ -377,7 +377,7 @@ export default function ProfilePage() {
                     />
                   </label>
                   <label className="text-sm">
-                    <span className="block text-text-subtle mb-1">งบที่ลงได้ (บาท)</span>
+                    <span className="block text-text-subtle mb-1">งบประมาณที่ใช้ได้ (บาท)</span>
                     <input
                       type="number"
                       min={0}
@@ -409,7 +409,7 @@ export default function ProfilePage() {
                   disabled={!form || saving}
                   className="px-4 py-2 bg-primary text-on-primary rounded-lg disabled:opacity-40"
                 >
-                  {saving ? "กำลังบันทึก…" : "บันทึก"}
+                  {saving ? "กำลังบันทึก" : "บันทึก"}
                 </button>
                 {saved && <span className="text-sm text-primary">บันทึกแล้ว</span>}
               </div>
@@ -419,10 +419,10 @@ export default function ProfilePage() {
               {/* 🔒 กติกาข้อ 1 — สองช่องนี้แยกกัน ห้ามรวมเป็น "ทักษะทั้งหมด" */}
               {[
                 ["ทักษะจาก CV (ยืนยันแล้ว)", state.summary.skills_from_cv],
-                ["ทักษะที่กรอกเอง", state.summary.skills_self_reported],
-                ["รอตรวจ", state.summary.pending_skills],
-                ["ผลงานที่ส่ง", state.summary.documents],
-                ["ข้อที่ตอบในแบบทดสอบ", state.summary.quiz_answered],
+                ["ทักษะที่ประเมินด้วยตนเอง", state.summary.skills_self_reported],
+                ["รอการตรวจสอบ", state.summary.pending_skills],
+                ["ผลงานที่ส่งแล้ว", state.summary.documents],
+                ["จำนวนข้อที่ตอบในแบบประเมิน", state.summary.quiz_answered],
                 ["เส้นทางที่สร้างไว้", state.summary.roadmaps],
               ].map(([label, value]) => (
                 <div key={label} className="p-3 border border-border-low rounded-lg bg-surface-muted">
@@ -450,13 +450,13 @@ export default function ProfilePage() {
                             {path.title_th}
                             {path.is_primary_goal && (
                               <span className="ml-2 text-[10px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded">
-                                เป้าหมายตอนนี้
+                                เป้าหมายปัจจุบัน
                               </span>
                             )}
                           </span>
                           <span className="block text-xs text-text-subtle">
-                            {path.steps_done}/{path.total_steps} ก้าว
-                            {path.next_step && ` · ก้าวถัดไป: ${path.next_step.name_th}`}
+                            {path.steps_done}/{path.total_steps} ขั้น
+                            {path.next_step && ` · ขั้นถัดไป: ${path.next_step.name_th}`}
                           </span>
                         </span>
                         <Icon className="text-text-subtle">arrow_forward</Icon>
@@ -488,8 +488,8 @@ export default function ProfilePage() {
                 </button>
               </div>
               <p className="text-xs text-tertiary mt-stack-sm">
-                ⚠️ ใครก็ตามที่มีรหัสนี้จะเห็นข้อมูลของคุณทั้งหมด รวมถึง CV ที่ส่งเข้ามา —
-                เก็บไว้เหมือนรหัสผ่าน อย่าโพสต์ในที่สาธารณะ
+                ⚠️ ผู้ที่มีรหัสนี้จะสามารถเข้าถึงข้อมูลของคุณได้ทั้งหมด รวมถึง CV ที่ส่งเข้าระบบ
+                กรุณาเก็บรักษาไว้เช่นเดียวกับรหัสผ่าน และไม่เผยแพร่ในที่สาธารณะ
               </p>
             </section>
 
@@ -497,8 +497,8 @@ export default function ProfilePage() {
             <section className="mt-stack-lg mb-stack-lg p-gutter border border-error-container rounded-xl">
               <h2 className="font-semibold text-text-main mb-stack-sm">ลบข้อมูลทั้งหมด</h2>
               <p className="text-sm text-text-subtle mb-stack-md">
-                ลบ CV ทักษะที่ยืนยันแล้ว คำตอบแบบทดสอบ และเส้นทางทั้งหมดออกจากเซิร์ฟเวอร์จริง
-                — กู้คืนไม่ได้
+                ระบบจะลบ CV ทักษะที่ยืนยันแล้ว คำตอบแบบประเมิน และเส้นทางทั้งหมดออกจากเซิร์ฟเวอร์
+                อย่างถาวร และไม่สามารถกู้คืนได้
               </p>
               {!confirmDelete ? (
                 <button
@@ -509,7 +509,7 @@ export default function ProfilePage() {
                 </button>
               ) : (
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm text-text-main">แน่ใจนะ ลบแล้วเอากลับมาไม่ได้</span>
+                  <span className="text-sm text-text-main">คุณแน่ใจหรือไม่ เมื่อลบแล้วจะไม่สามารถกู้คืนได้</span>
                   <button
                     onClick={wipe}
                     className="px-4 py-2 bg-error text-on-error rounded-lg text-sm"
@@ -528,7 +528,7 @@ export default function ProfilePage() {
           </>
         )}
 
-        {uid && !state && !error && <p className="mt-stack-lg text-text-subtle">กำลังโหลด…</p>}
+        {uid && !state && !error && <p className="mt-stack-lg text-text-subtle">กำลังโหลดข้อมูล</p>}
       </main>
       <MobileWorkspaceNav active="profile" />
     </div>

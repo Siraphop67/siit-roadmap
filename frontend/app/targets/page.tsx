@@ -1,170 +1,84 @@
 "use client";
 
-/**
- * คลังอาชีพ — เลือกเป้าหมายก่อนไปดู roadmap
- *
- * 🔴 หัวใจของหน้านี้ไม่ใช่รายการอาชีพ แต่คือ **สิ่งที่ถูกกรองออกต้องยังเห็นพร้อมเหตุผล**
- *    เว็บหางานทั่วไปตัดตำแหน่งที่คุณสมบัติไม่ถึงออกจากผลการค้นหาเงียบ ๆ
- *    ผู้ใช้จึงไม่มีวันรู้ว่ามีอะไรอยู่ตรงนั้น และไม่มีวันรู้ว่าต้องทำอะไรถึงจะไปถึง
- *
- *    ระบบนี้แยกสองชนิด (ดู DECISIONS D6):
- *      ถาวร  สาขา · เงื่อนไขทุน → ย้ายไปกล่องล่างพร้อมเหตุผล
- *      ตามเวลา ชั้นปี · เกรด    → ยังอยู่ในรายการหลัก แสดงเป็น "สมัครได้เมื่อ…"
- */
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { api, ensureSession, session, type TargetCard, type TargetsResponse } from "@/lib/api";
+import { Icon, InlineNotice, MobileWorkspaceNav, WorkspaceSidebar } from "@/components/student-ui";
 
-import { Blocked, Card, DataNote, ErrorState, Loading, Note, Page } from "@/components/ui";
-import { api, session, type TargetsResponse } from "@/lib/api";
+const careerIcons: Record<string, string> = {
+  "SW-DEV": "code_blocks", "DATA-ENG": "analytics", "ROBOT-ENG": "precision_manufacturing",
+  "STRUCT-ENG": "architecture", "PROCESS-ENG": "factory", "MFG-ENG": "settings_suggest",
+  "POWER-ENG": "bolt", "MECH-DESIGN": "construction",
+};
 
 export default function TargetsPage() {
   const router = useRouter();
   const [data, setData] = useState<TargetsResponse | null>(null);
-  const [failed, setFailed] = useState("");
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
   const [picking, setPicking] = useState("");
-  const [chosen, setChosen] = useState<{ id: string; title: string } | null>(null);
-
-  /**
-   * ส่ง user_id ไปด้วยถ้ามี — API จะได้กรองตามเงื่อนไขทุนและสาขาของคนนี้
-   *
-   * 🔴 เขียนเป็น .then(setData) ไม่ใช่ await ในฟังก์ชันห่อ
-   *    กฎ react-hooks/set-state-in-effect ห้าม effect เรียกฟังก์ชันที่ setState ต่อ
-   *    แต่อนุญาตให้ส่ง setState เป็น callback ของสิ่งที่มาจากภายนอก ซึ่งคือกรณีนี้พอดี
-   */
   const load = useCallback(() => {
-    api
-      .targets(session.read())
-      .then(setData)
-      .catch((e: unknown) =>
-        setFailed(e instanceof Error ? e.message : "โหลดคลังอาชีพไม่สำเร็จ"),
-      );
+    api.targets(session.read()).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : "โหลดคลังอาชีพไม่สำเร็จ"));
+  }, []);
+  useEffect(() => {
+    api.targets(session.read()).then(setData).catch((e: unknown) => setError(e instanceof Error ? e.message : "โหลดคลังอาชีพไม่สำเร็จ"));
   }, []);
 
-  useEffect(load, [load]);
+  const targets = useMemo(() => (data?.targets ?? []).filter((t) => `${t.title_th} ${t.title_en} ${t.summary} ${t.top_skills.map((s) => s.name_en).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase())), [data, search]);
 
-  async function choose(id: string, title: string) {
-    const uid = session.read();
-    if (!uid) return void router.push("/");
-    setPicking(id);
-    setFailed("");
+  async function choose(target: TargetCard) {
+    setPicking(target.id); setError("");
     try {
-      await api.setGoal({ user_id: uid, target_id: id });
-      session.writeTarget(id);
-      // 🔴 ยังไม่ push ไป /roadmap เพราะหน้านั้นยังไม่ได้สร้าง — ส่งไปจะเจอ 404
-      //    พอหน้า roadmap เสร็จ เปลี่ยนบรรทัดนี้เป็น router.push("/roadmap") ได้เลย
-      setChosen({ id, title });
-    } catch (e) {
-      setFailed(e instanceof Error ? e.message : "เลือกเป้าหมายไม่สำเร็จ");
-    } finally {
-      setPicking("");
-    }
+      const uid = await ensureSession("known");
+      await api.setGoal({ user_id: uid, target_id: target.id });
+      session.writeTarget(target.id);
+      await api.roadmap(uid, target.id);
+      router.push("/roadmap");
+    } catch (e) { setError(e instanceof Error ? e.message : "สร้าง Roadmap ไม่สำเร็จ"); }
+    finally { setPicking(""); }
   }
 
-  if (failed && !data) return <ErrorState message={failed} onRetry={load} />;
-  if (!data) return <Loading label="กำลังโหลดคลังอาชีพ" />;
-
   return (
-    <Page
-      eyebrow="ขั้นที่ 1"
-      title="อยากไปถึงงานแบบไหน"
-      lede="เลือกสักอันแล้วระบบจะบอกว่าจากจุดที่คุณอยู่ตอนนี้ เหลืออีกกี่ก้าว และก้าวถัดไปคืออะไร"
-    >
-      {failed && (
-        <div className="mb-5">
-          <Note tone="warn">{failed}</Note>
-        </div>
-      )}
-
-      {chosen && (
-        <div className="mb-6">
-          <Note tone="accent" title={`ตั้งเป้าหมายเป็น “${chosen.title}” แล้ว`}>
-            หน้าเส้นทาง (roadmap) กำลังสร้าง — เครื่องยนต์ฝั่งนั้นเสร็จและทดสอบแล้ว
-            เหลือหน้าจอ · ระหว่างนี้ดูได้ว่าอาชีพนี้ต้องแสดงความสามารถอะไรบ้างที่{" "}
-            <a
-              href={`/targets/${encodeURIComponent(chosen.id)}`}
-              className="font-semibold underline underline-offset-4"
-            >
-              หน้ารายละเอียด
-            </a>
-          </Note>
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {data.targets.map((t) => (
-          <Card key={t.id} className="flex flex-col">
-            {/* 🔴 จอแคบให้ป้ายลงมาอยู่ใต้ชื่อ — วางข้างกันบนมือถือทำให้ชื่อไทยยาว ๆ
-                แตกเป็น 4 บรรทัดจนอ่านไม่ออก และกลุ่มเป้าหมายเข้าผ่านมือถือเป็นหลัก */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-              <div className="min-w-0">
-                <h2 className="text-[1.15rem] font-bold leading-snug">{t.title_th}</h2>
-                <p className="text-[0.86rem] text-faint">{t.title_en}</p>
-              </div>
-              <span className="self-start whitespace-nowrap rounded-full border border-line px-2.5 py-1 text-[0.75rem] text-muted sm:shrink-0">
-                {t.sector_label}
-              </span>
+    <div className="font-body-md text-body-md bg-surface-bg flex min-h-screen lg:h-screen lg:overflow-hidden pb-20 lg:pb-0">
+      <WorkspaceSidebar active="targets" />
+      <main className="flex-1 overflow-y-auto bg-surface-bg relative">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter py-stack-lg">
+          <header className="mb-stack-lg">
+            <h1 className="font-display-lg text-[32px] md:text-display-lg font-bold text-on-surface mb-2 tracking-tight">คลังอาชีพ (Career Library)</h1>
+            <p className="font-body-lg text-body-lg text-text-subtle max-w-2xl">Explore curated career paths designed for SIIT students. Discover the skills you need and the roadmap to get there.</p>
+            <div className="mt-stack-md relative max-w-xl">
+              <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-text-subtle">search</Icon>
+              <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-surface-muted border border-border-low rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary ambient-shadow" placeholder="Search careers, skills, or roles..." aria-label="ค้นหาอาชีพ" />
             </div>
+          </header>
 
-            <p className="mt-3 flex-1 text-[0.95rem] leading-relaxed text-muted">
-              {t.summary}
-            </p>
+          {error && <div className="mb-stack-md"><InlineNotice tone="error">{error} <button className="underline font-semibold" onClick={() => { setError(""); load(); }}>ลองใหม่</button></InlineNotice></div>}
+          {!data && !error && <div className="py-24 text-center text-text-subtle"><Icon className="text-4xl animate-pulse">route</Icon><p className="mt-3">กำลังโหลดคลังอาชีพ…</p></div>}
 
-            <p className="mt-3 text-[0.85rem] text-faint">
-              ต้องแสดงความสามารถ {t.requirement_count} เรื่อง ·{" "}
-              {t.posting_count > 0
-                ? `อ้างอิงประกาศงานจริง ${t.posting_count} ประกาศ`
-                : "ยังไม่ได้อ้างอิงประกาศงานจริง"}
-            </p>
-
-            {/* เงื่อนไขตามเวลา — ยังสมัครไม่ได้ตอนนี้ แต่ไม่ได้แปลว่าไปไม่ได้ */}
-            <Blocked blocks={t.conditions_at_application} />
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => choose(t.id, t.title_th)}
-                disabled={picking !== ""}
-                className="rounded-lg bg-accent px-4 py-2.5 text-[0.93rem] font-semibold text-white transition hover:brightness-110 disabled:bg-line-strong disabled:text-faint"
-              >
-                {picking === t.id ? "กำลังเปิดเส้นทาง…" : "ดูเส้นทางไปอาชีพนี้ →"}
-              </button>
-              <a
-                href={`/targets/${encodeURIComponent(t.id)}`}
-                className="text-[0.9rem] font-semibold text-muted underline underline-offset-4 hover:text-accent"
-              >
-                งานนี้ทำอะไรบ้าง
-              </a>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* 🔴 กล่องนี้คือจุดที่ต่างจากเว็บหางานชัดที่สุด — ห้ามซ่อน ห้ามยุบ */}
-      {data.filtered_out.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-[1.05rem] font-bold">
-            อีก {data.filtered_out.length} อาชีพที่เงื่อนไขของคุณไปไม่ถึง
-          </h2>
-          <p className="mt-1 text-[0.92rem] text-muted">
-            เราแสดงไว้พร้อมเหตุผล ไม่ซ่อน — เพราะการไม่รู้ว่ามีอะไรอยู่ตรงนั้น
-            แย่กว่าการรู้ว่าไปไม่ได้
-          </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {data.filtered_out.map((f) => (
-              <div
-                key={f.id}
-                className="rounded-xl border border-line border-dashed px-5 py-4"
-              >
-                <h3 className="font-semibold text-muted">{f.title_th}</h3>
-                <Blocked blocks={f.reasons} />
-              </div>
+          <section className="bento-grid">
+            {targets.map((target, index) => (
+              <article key={target.id} className="bg-surface-muted border border-border-low rounded-xl p-6 flex flex-col hover:ambient-shadow transition-shadow duration-300 relative group overflow-hidden">
+                {index === 0 && <div className="absolute top-0 right-0 bg-primary-fixed text-on-primary-fixed-variant text-xs px-3 py-1 rounded-bl-lg font-semibold">Trending</div>}
+                {target.conditions_at_application[0] && <div className="absolute top-0 right-0 bg-secondary-container text-on-secondary-container text-xs px-3 py-1 rounded-bl-lg font-semibold flex items-center gap-1"><Icon className="text-xs">schedule</Icon>{target.conditions_at_application[0].message}</div>}
+                <div className="w-12 h-12 bg-white rounded-lg border border-border-low flex items-center justify-center mb-4 shadow-sm"><Icon className={`text-2xl ${index % 3 === 1 ? "text-tertiary" : index % 3 === 2 ? "text-roadmap-accent" : "text-primary"}`}>{careerIcons[target.id] ?? "work"}</Icon></div>
+                <h2 className="font-headline-md text-xl sm:text-headline-md font-semibold text-on-surface mb-1">{target.title_th}</h2>
+                <p className="font-label-sm text-label-sm text-text-subtle mb-2">{target.title_en} · {target.sector_label}</p>
+                <p className="text-text-subtle mb-4 flex-grow">{target.summary}</p>
+                <div className="flex flex-wrap gap-1.5 mb-5">{target.top_skills.slice(0, 3).map((skill) => <span key={skill.skill_id} className="px-2 py-1 rounded bg-surface-container text-[11px] text-on-surface-variant">{skill.name_en_is_placeholder ? skill.name_th : skill.name_en}</span>)}</div>
+                <button onClick={() => choose(target)} disabled={picking !== ""} className="w-full py-2.5 bg-white border border-border-low rounded-lg text-primary font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex justify-center items-center gap-2 group-hover:border-primary disabled:opacity-60">{picking === target.id ? "กำลังสร้าง Roadmap…" : "Explore Roadmap"}<Icon className="text-sm">arrow_forward</Icon></button>
+              </article>
             ))}
-          </div>
-        </section>
-      )}
+            {data && targets.length === 0 && <div className="col-span-full p-12 text-center bg-surface-muted rounded-xl text-text-subtle">ไม่พบอาชีพที่ตรงกับ “{search}”</div>}
+          </section>
 
-      <DataNote>{data.data_note}</DataNote>
-    </Page>
+          {!!data?.filtered_out.length && <section className="mt-stack-lg">
+            <div className="flex items-center gap-2 mb-6"><Icon className="text-error">block</Icon><h2 className="font-headline-lg text-2xl md:text-headline-lg font-bold text-on-surface">อาชีพที่เงื่อนไขของคุณไปไม่ถึง</h2></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{data.filtered_out.map((target) => <div key={target.id} className="bg-surface-muted border border-border-low rounded-xl p-6 opacity-75"><h3 className="font-headline-md text-xl font-semibold text-on-surface mb-1">{target.title_th}</h3><div className="mt-4 flex flex-col gap-2">{target.reasons.map((reason, i) => <div key={`${reason.kind}-${i}`} className="flex gap-2 text-sm text-error"><Icon className="text-sm shrink-0">cancel</Icon><p>{reason.message}</p></div>)}</div></div>)}</div>
+          </section>}
+          {data?.data_note && <div className="mt-stack-lg"><InlineNotice>{data.data_note}</InlineNotice></div>}
+        </div>
+      </main>
+      <MobileWorkspaceNav active="targets" />
+    </div>
   );
 }

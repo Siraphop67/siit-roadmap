@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SIIT Roadmap — Frontend
 
-## Getting Started
+หน้าเว็บ Next.js สำหรับ SIIT Roadmap ออกแบบตาม visual direction ของ Stitch: โทนสี Academic Pathfinding, Plus Jakarta Sans, Inter และ layout แบบ clean workspace ที่รองรับมือถือ แท็บเล็ต และเดสก์ท็อป
 
-First, run the development server:
+## เริ่มใช้งาน
+
+ครั้งแรกให้ติดตั้ง dependencies และเตรียมข้อมูลจากโฟลเดอร์ `siit-roadmap`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+make setup
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+จากนั้นเปิดเทอร์มินัล 2 หน้าต่าง:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+make backend
+make frontend
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+จากนั้นเปิด [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## หน้าที่พร้อมใช้งาน
 
-To learn more about Next.js, take a look at the following resources:
+- `/` เลือกทางเข้า “ยังไม่รู้” หรือ “รู้เป้าหมายแล้ว”
+- `/discover` แบบทดสอบกิจกรรม 5 ระดับแบบ adaptive
+- `/discover/results` ผลจับคู่อาชีพ พร้อมเหตุผลและข้อควรรู้
+- `/targets` คลังอาชีพ 8 อาชีพ พร้อมเงื่อนไขที่ถูกกรอง
+- `/portfolio` รับ PDF, ข้อความ, GitHub และข้อความจาก LinkedIn
+- `/portfolio/review` ไฮไลต์หลักฐานและให้ผู้ใช้ยืนยัน/ปฏิเสธ/แก้ระดับ
+- `/roadmap` Roadmap ที่คำนวณจาก skill gap พร้อมตัวเลือกการเรียนรู้
+- `/skills` กราฟ 73 ทักษะและ 105 ความสัมพันธ์ พร้อมหลักฐานแยกตามแหล่ง
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+หน้าเว็บเรียกข้อมูลและ logic ผ่าน FastAPI จริงทั้งหมด หาก backend ไม่ได้เปิดอยู่ หน้าจอจะแสดงข้อความบอกวิธีแก้โดยไม่สร้างข้อมูลสมมติขึ้นมาแทน
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ตรวจสอบก่อนส่งงาน
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```

@@ -64,11 +64,13 @@ from app.seed.careers import SECTORS
 router = APIRouter(prefix="/api/discover")
 
 # ── จำนวนข้อ ──
-# ตอบน้อยกว่านี้ห้ามสรุป แม้คะแนนจะแยกกันแล้ว — กันกรณีตอบ 3 ข้อแรกแล้วบังเอิญห่าง
-MIN_ITEMS = 12
-# ถามเกินนี้ไม่ได้ ต่อให้ยังแยกไม่ออก — ยาวกว่านี้คนเลิกกลางคัน แล้วบอกตรง ๆ ว่ายังไม่ชัด
-MAX_ITEMS = 24
-# ⭐ แสดงผลระหว่างทางทุกกี่ข้อ — สิ่งเดียวที่คนในเธรด r/findapath ชมว่าดี
+# Character Creation: เปิดผลเบื้องต้นหลัง 4 mission และไม่ยืดเกิน 12 mission
+# หากสัญญาณยังใกล้กัน ผลลัพธ์ต้องบอกว่าเป็น "ทางที่เป็นไปได้" ไม่ใช่ฟันธงอาชีพ
+MIN_ITEMS = 4
+MAX_ITEMS = 12
+# ระบบไม่ redirect เองที่ผลเบื้องต้น: คนที่อยากให้แยกชัดขึ้นเดิน mission เสริมได้
+AUTO_FINISH_MIN = 12
+# Build preview ใช้รอบที่ข้อมูลเริ่มเพียงพอ; ผลเบื้องต้นยังเปิดเองได้หลัง 4 mission
 FEEDBACK_EVERY = 6
 # จำนวนอาชีพที่คืนในผลลัพธ์
 TOP_N = 5
@@ -370,7 +372,7 @@ def next_item(user_id: str, db: Session = Depends(get_db)) -> dict:
         }
 
     enough = answered >= MIN_ITEMS
-    if (outcome.separated and enough) or answered >= MAX_ITEMS or left <= 0:
+    if (outcome.separated and answered >= AUTO_FINISH_MIN) or answered >= MAX_ITEMS or left <= 0:
         return {
             "done": True,
             "reason": (

@@ -176,6 +176,87 @@ def test_pending_extraction_stays_off_the_graph_until_confirmed(client, user):
     assert detail["you"]["evidence"][0]["span_text"]
 
 
+# ═══════════ กราฟของตัวเอง (scope=mine) ═══════════
+
+
+@pytest.fixture
+def learner(client, user) -> str:
+    """ผู้ใช้ที่มีทักษะยืนยันแล้วจริง ๆ — ผ่านเส้นทางเดียวกับผู้ใช้จริง"""
+    doc = client.post("/api/portfolio/text", json={
+        "user_id": user, "text": CV, "consent": True}).json()
+    review = client.get(f"/api/portfolio/{doc['document_id']}").json()
+    client.post(f"/api/portfolio/{doc['document_id']}/confirm", json={
+        "user_id": user,
+        "decisions": {e["id"]: "confirmed" for e in review["extracted"]}})
+    return user
+
+
+def test_mine_is_much_smaller_than_the_whole_system_graph(client, learner):
+    """🔴 เหตุผลทั้งหมดที่ scope นี้มีอยู่ — 73 กล่องคือกราฟของระบบ ไม่ใช่ของผู้ใช้"""
+    mine = client.get("/api/skills", params={"user_id": learner, "scope": "mine"}).json()
+    everything = client.get("/api/skills", params={"user_id": learner}).json()
+
+    assert mine["scope"] == "mine"
+    assert 0 < len(mine["nodes"]) < len(everything["nodes"])
+    assert mine["counts"]["have"] > 0
+
+
+def test_mine_keeps_the_lines_meaningful(client, learner):
+    """ตัดเหลือแค่ทักษะที่มีจะไม่เหลือเส้น — ต้องมีเพื่อนบ้านหนึ่งก้าวติดมาด้วย"""
+    mine = client.get("/api/skills", params={"user_id": learner, "scope": "mine"}).json()
+    ids = {n["id"] for n in mine["nodes"]}
+
+    for e in mine["edges"]:
+        assert e["from"] in ids and e["to"] in ids, "เส้นลอยออกนอกชุด node ที่ส่งไป"
+    assert mine["edges"], "ไม่เหลือเส้นเลย กราฟก็ไม่ได้บอกอะไรมากกว่ารายการ"
+
+
+def test_every_node_says_how_it_relates_to_you(client, learner):
+    mine = client.get("/api/skills", params={"user_id": learner, "scope": "mine"}).json()
+    for n in mine["nodes"]:
+        assert n["relation"] in {"have", "prereq_missing", "next"}, "other ต้องถูกตัดออกแล้ว"
+        assert n["relation_th"]
+        has_evidence = n["level_from_cv"] is not None or n["level_self_reported"] is not None
+        assert has_evidence == (n["relation"] == "have"), (
+            "ติดป้ายว่ามีแล้ว ต้องมีหลักฐานรองรับเสมอ และกลับกัน"
+        )
+
+
+def test_neighbours_are_really_one_step_away(client, learner):
+    """ตัวที่ติดมาต้องต่อกับทักษะที่ผู้ใช้มีจริง ๆ ไม่ใช่ใครก็ได้"""
+    mine = client.get("/api/skills", params={"user_id": learner, "scope": "mine"}).json()
+    have = {n["id"] for n in mine["nodes"] if n["relation"] == "have"}
+    everything = client.get("/api/skills").json()
+    touching = {e["from"] for e in everything["edges"] if e["to"] in have}
+    touching |= {e["to"] for e in everything["edges"] if e["from"] in have}
+
+    for n in mine["nodes"]:
+        if n["relation"] != "have":
+            assert n["id"] in touching, f"{n['id']} ไม่ได้ติดกับทักษะไหนของผู้ใช้เลย"
+
+
+def test_no_skills_yet_says_what_to_do_next(client, user):
+    mine = client.get("/api/skills", params={"user_id": user, "scope": "mine"}).json()
+    assert mine["nodes"] == []
+    assert mine["empty_message"], "ว่างเปล่าเงียบ ๆ ไม่ได้ ต้องบอกว่าต้องทำอะไรก่อน"
+    assert "CV" in mine["empty_message"] or "ผลงาน" in mine["empty_message"]
+
+
+def test_mine_without_a_user_is_refused(client):
+    r = client.get("/api/skills", params={"scope": "mine"})
+    assert r.status_code == 400
+    assert "user_id" in r.json()["detail"]
+
+
+def test_whole_graph_still_comes_back_whole(client, learner):
+    """🔒 scope=mine ต้องไม่ทำให้มุมมองเดิมหด — หน้าจอยังต้องสลับกลับมาดูทั้งใบได้"""
+    everything = client.get("/api/skills", params={"user_id": learner}).json()
+    assert everything["scope"] == "all"
+    assert everything["counts"]["skills"] == 73
+    assert everything["counts"]["edges"] == 105
+    assert everything["empty_message"] == ""
+
+
 # ═══════════ รายละเอียดทักษะรายตัว ═══════════
 
 

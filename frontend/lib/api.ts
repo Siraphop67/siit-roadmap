@@ -349,7 +349,19 @@ export type SkillRef = {
   name_en_is_placeholder: boolean;
 };
 
+/**
+ * ทักษะตัวนี้เกี่ยวกับผู้ใช้ยังไง — ใช้ลงสีบนกราฟและเขียนคำอธิบาย
+ *
+ * `have` มีแล้ว · `prereq_missing` ยังขาดและขวางอยู่ · `next` ไปต่อได้ทันที
+ * `other` ยังไม่เกี่ยวกับสิ่งที่ผู้ใช้มี — โผล่เฉพาะตอน `scope: "all"`
+ * 🔴 ไม่ส่ง userId = ทุกตัวเป็น `other` ไม่ได้แปลว่าผู้ใช้ไม่มีทักษะอะไรเลย
+ */
+export type SkillRelation = "have" | "prereq_missing" | "next" | "other";
+
 export type SkillNode = SkillRef & {
+  relation: SkillRelation;
+  /** ประโยคพร้อมขึ้นจอของ `relation` — ใช้ตัวนี้ อย่าแปลเอง */
+  relation_th: string;
   source: "onet" | "market" | "manual";
   source_th: string;
   /** false = ทำเมื่อไหร่ก็ได้ ไม่ต้องรอ prerequisite */
@@ -367,11 +379,26 @@ export type SkillNode = SkillRef & {
 };
 
 export type SkillGraph = {
+  /**
+   * `mine` = เฉพาะทักษะของผู้ใช้ + ตัวที่ติดกันหนึ่งก้าว (ทั้งฝั่งที่ยังขาดและฝั่งที่ไปต่อได้)
+   * `all` = ทั้งใบ 73 ทักษะ ซึ่งคือ *กราฟของระบบ* ไม่ใช่ของผู้ใช้ — อย่าตั้งเป็นค่าเริ่มต้น
+   * ของหน้าที่ผู้ใช้ล็อกอินแล้ว เพราะเขาต้องมานั่งหาตัวเองใน 73 กล่อง
+   */
+  scope: "all" | "mine";
   nodes: SkillNode[];
   edges: { from: string; to: string; reviewed_by_human: boolean }[];
   /** ใช้ทำ legend — `count` บวกกันได้เท่าจำนวน node พอดี */
   categories: { id: SkillCategory; label_th: string; count: number }[];
-  counts: { skills: number; edges: number; roots: number };
+  counts: {
+    skills: number;
+    edges: number;
+    roots: number;
+    have: number;
+    prereq_missing: number;
+    next: number;
+  };
+  /** ไม่ว่าง = ไม่มี node เลย และนี่คือเหตุผล + สิ่งที่ต้องทำก่อน ห้ามโชว์กราฟเปล่า */
+  empty_message: string;
   /** null = เรียกแบบไม่ส่ง userId */
   you: { from_cv: number; self_reported: number } | null;
   /** 🔒 ข้อจำกัดตามจริง — `labels` ไม่ว่างเมื่อมีทักษะที่ยังไม่มีชื่ออังกฤษ เอาขึ้นจอได้ */
@@ -639,6 +666,40 @@ export function submissionErrors(e: unknown): SubmissionErrors | null {
     : null;
 }
 
+// ══════════════════════ กลับมาทำต่อ ══════════════════════
+
+/**
+ * ขั้นตอนหนึ่งขั้นบนเส้นทาง — ลำดับมาจาก API ห้ามเรียงใหม่หรือข้ามเอง
+ * ลำดับนี้คือกติกาของระบบ (ยืนยันทักษะก่อนถึงนับ · มีเป้าหมายก่อนถึงมี roadmap)
+ */
+export type ResumeStep = {
+  id: "profile" | "portfolio" | "confirm" | "goal" | "roadmap";
+  title: string;
+  done: boolean;
+  /** ประโยคพร้อมขึ้นจอว่าขั้นนี้มีอะไรอยู่แล้วบ้าง */
+  detail: string;
+  href: string;
+};
+
+export type ResumeState = {
+  user_id: string;
+  entry: "known" | "unsure";
+  started_at: string;
+  steps: ResumeStep[];
+  /** null = เดินครบเส้นแล้ว · ห้ามขึ้นปุ่ม "ทำต่อ" ตอนเป็น null */
+  next: ResumeStep | null;
+  summary: {
+    documents: number;
+    pending_skills: number;
+    /** 🔒 กติกาข้อ 1 — สองตัวนี้ห้ามบวกรวมกันบนหน้าจอ */
+    skills_from_cv: number;
+    skills_self_reported: number;
+    quiz_answered: number;
+    roadmaps: number;
+  };
+  note: string;
+};
+
 // ══════════════════════ ข้อมูลของฉัน ══════════════════════
 
 export type SkillLine = { skill_id: string; name_th: string; level: number };
@@ -865,11 +926,19 @@ export const api = {
     call<ResourceDetail>(`/resources/${encodeURIComponent(resourceId)}${q({ user_id: userId, target_id: targetId })}`),
 
   // ── กราฟทักษะ ──
-  /** ส่ง userId ถ้ามี — จะได้รู้ว่า node ไหนผู้ใช้มีแล้ว · ไม่ส่งก็ดูกราฟได้ */
-  skills: (userId?: string | null) => call<SkillGraph>(`/skills${q({ user_id: userId })}`),
+  /**
+   * ส่ง userId ถ้ามี — จะได้รู้ว่า node ไหนผู้ใช้มีแล้ว · ไม่ส่งก็ดูกราฟได้
+   * `scope: "mine"` ต้องมี userId เสมอ ไม่งั้นได้ ApiError 400
+   */
+  skills: (userId?: string | null, scope: "all" | "mine" = "all") =>
+    call<SkillGraph>(`/skills${q({ user_id: userId, scope })}`),
 
   skill: (skillId: string, userId?: string | null) =>
     call<SkillDetail>(`/skills/${encodeURIComponent(skillId)}${q({ user_id: userId })}`),
+
+  // ── กลับมาทำต่อ ──
+  /** "ครั้งก่อนค้างไว้ตรงไหน" · รหัสที่ใช้ไม่ได้จะได้ ApiError 404 — เอาไว้ตรวจรหัสกู้คืน */
+  resume: (userId: string) => call<ResumeState>(`/me/resume${q({ user_id: userId })}`),
 
   // ── ข้อมูลของฉัน + PDPA ──
   me: (userId: string) => call<MeResponse>(`/me${q({ user_id: userId })}`),

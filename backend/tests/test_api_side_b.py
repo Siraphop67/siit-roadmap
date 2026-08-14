@@ -72,6 +72,25 @@ def test_meta_states_plainly_what_is_not_real_yet(client):
     assert "ไม่ใช่ LLM" in m["notes"]["extractor"]
 
 
+def test_meta_reports_the_real_extractor(client, monkeypatch):
+    """🔒 กติกาข้อ 5 — สลับไปใช้ LLM จริงแล้ว หน้าจอต้องเลิกพูดว่า "ไม่ใช่ LLM"
+
+    เจอตอนสลับ LLM_PROVIDER=local เพื่อทดสอบ: /health บอกว่าเป็น LLM แล้ว
+    แต่ข้อความใน /meta ยังเขียนตายตัวว่าใช้การจับคำสำคัญ — ซึ่งขึ้นจอตรง ๆ
+    """
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "local")
+    monkeypatch.setattr(settings, "local_llm_model", "gemma4:26b")
+    m = client.get("/api/meta").json()
+
+    assert m["extractor"] == "local"
+    assert "ไม่ใช่ LLM" not in m["notes"]["extractor"], "ใช้ LLM อยู่ ห้ามบอกว่าไม่ใช่"
+    assert "gemma4:26b" in m["notes"]["extractor"], "ต้องบอกด้วยว่าอ่านด้วยรุ่นไหน"
+    # ⭐ ต่อให้เป็น LLM จริง กติกาข้อ 2 กับ 3 ก็ยังต้องถูกย้ำบนหน้าจอ
+    assert "ยืนยัน" in m["notes"]["extractor"]
+
+
 # ═══════════ คลังอาชีพ ═══════════
 
 
@@ -350,6 +369,58 @@ def test_second_career_is_listed_without_stealing_the_primary_goal(client, ready
 
 def test_roadmap_list_refuses_an_unknown_user(client):
     assert client.get("/api/roadmaps", params={"user_id": "ไม่มีคนนี้"}).status_code == 404
+
+
+# ═══════════ กลับมาทำต่อ ═══════════
+
+
+def test_resume_points_a_brand_new_user_at_the_first_step(client, user):
+    r = client.get("/api/me/resume", params={"user_id": user}).json()
+    assert r["next"]["id"] == "profile"
+    assert all(not s["done"] for s in r["steps"])
+    assert r["summary"]["skills_from_cv"] == 0
+
+
+def test_resume_moves_forward_as_the_user_actually_progresses(client, with_cv):
+    """ลำดับต้องเดินตามสิ่งที่ผู้ใช้ทำจริง ไม่ใช่ลำดับที่หน้าจอเดา"""
+    user_id, doc_id = with_cv
+    client.post("/api/profile", json={
+        "user_id": user_id, "field": "CPE", "education_level": "ปี 3", "year": 3})
+
+    # ส่งผลงานแล้วแต่ยังไม่ยืนยัน → ต้องพาไปหน้าตรวจ ไม่ใช่ข้ามไปเลือกอาชีพ
+    r = client.get("/api/me/resume", params={"user_id": user_id}).json()
+    assert r["next"]["id"] == "confirm"
+    assert doc_id in r["next"]["href"], "ต้องพากลับไปที่เอกสารฉบับที่ค้างอยู่"
+    assert r["summary"]["pending_skills"] > 0
+
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    client.post(f"/api/portfolio/{doc_id}/confirm", json={
+        "user_id": user_id, "decisions": {e["id"]: "confirmed" for e in d["extracted"]}})
+
+    r = client.get("/api/me/resume", params={"user_id": user_id}).json()
+    assert r["next"]["id"] == "goal", "ยืนยันครบแล้วต้องไปขั้นถัดไป"
+    assert r["summary"]["pending_skills"] == 0
+    assert r["summary"]["skills_from_cv"] > 0
+
+
+def test_resume_has_nothing_left_when_the_walk_is_done(client, ready):
+    client.get("/api/roadmap", params={"user_id": ready})
+    r = client.get("/api/me/resume", params={"user_id": ready}).json()
+    assert all(s["done"] for s in r["steps"]), [s["id"] for s in r["steps"] if not s["done"]]
+    assert r["next"] is None, "เดินครบแล้วต้องไม่มีปุ่ม 'ทำต่อ' ลอย ๆ"
+
+
+def test_resume_keeps_the_two_kinds_of_skills_apart(client, ready):
+    """🔒 กติกาข้อ 1 — สรุปหน้าโปรไฟล์ก็ห้ามบวกรวมสองแหล่ง"""
+    r = client.get("/api/me/resume", params={"user_id": ready}).json()
+    assert "skills_from_cv" in r["summary"] and "skills_self_reported" in r["summary"]
+    assert "skills" not in r["summary"]
+
+
+def test_resume_refuses_an_unknown_code(client):
+    """รหัสที่ใช้กู้คืนต้องตอบชัดว่าใช้ไม่ได้ ไม่ใช่คืนหน้าเปล่า"""
+    r = client.get("/api/me/resume", params={"user_id": "รหัสมั่ว"})
+    assert r.status_code == 404
 
 
 # ═══════════ PDPA ═══════════

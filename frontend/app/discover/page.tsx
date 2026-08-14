@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ensureSession, session, type ActivityAnswer, type DiscoverNext } from "@/lib/api";
 import { Icon, InlineNotice } from "@/components/student-ui";
@@ -19,7 +19,7 @@ const choiceStyle: Record<ActivityAnswer, { icon: string; tint: string }> = {
 
 const stageNames = ["ความสนใจแรก", "ความถนัด", "รูปแบบการทำงาน", "แนวทางของคุณ"];
 
-export default function DiscoverPage() {
+function DiscoverContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<DiscoverNext | null>(null);
@@ -77,4 +77,12 @@ export default function DiscoverPage() {
       </section>}
     </main>
   </div>;
+}
+
+/**
+ * 🔒 useSearchParams() ต้องอยู่ใต้ Suspense ไม่งั้น next build จะพังตอน prerender
+ *    (แบบเดียวกับ /portfolio/review)
+ */
+export default function DiscoverPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-[#061323] grid place-items-center text-white/60">กำลังเตรียมแบบประเมิน</div>}><DiscoverContent /></Suspense>;
 }

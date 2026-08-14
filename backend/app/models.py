@@ -414,6 +414,20 @@ class PersonalityResult(Base):
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class CharacterBuild(Base):
+    """ตัวตนที่ผู้ใช้เลือกใน Character Creation — เป็น preference ไม่ใช่หลักฐานทักษะ."""
+
+    __tablename__ = "character_build"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("app_user.id"), unique=True)
+    archetype: Mapped[str] = mapped_column(String(24))  # builder | analyst | maker | optimizer
+    playstyle: Mapped[str] = mapped_column(String(24))  # explore | solve | create | improve
+    intensity: Mapped[str] = mapped_column(String(16), default="steady")  # light | steady | challenge
+    completed_missions: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
 class ActivityResponse(Base):
     """คำตอบต่อข้อคำถามหนึ่งข้อ — 🔒 ห้ามไหลเข้า ExtractedSkill
 
@@ -522,3 +536,17 @@ class StepOption(Base):
     blocked_reason: Mapped[str | None] = mapped_column(Text)
 
     step: Mapped[RoadmapStep] = relationship(back_populates="options")
+
+
+class QuestProgress(Base):
+    """สถานะการลงมือทำ resource หนึ่งชิ้น — ไม่อ้างว่าผ่านแล้วจนผู้ใช้กด complete เอง."""
+
+    __tablename__ = "quest_progress"
+    __table_args__ = (UniqueConstraint("user_id", "resource_id", name="uq_quest_progress"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("app_user.id"))
+    resource_id: Mapped[str] = mapped_column(ForeignKey("learning_resource.id"))
+    status: Mapped[str] = mapped_column(String(16), default="started")  # started | completed
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

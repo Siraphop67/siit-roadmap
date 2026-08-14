@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { api, ensureSession, type ActivityAnswer, type DiscoverNext } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { api, ensureSession, session, type ActivityAnswer, type DiscoverNext } from "@/lib/api";
 import { Icon, InlineNotice } from "@/components/student-ui";
 
 const buildChoices: Record<ActivityAnswer, { title: string; sub: string; icon: string; tint: string }> = {
@@ -17,6 +17,7 @@ const missionNames = ["SPARK", "INSTINCT", "PLAYSTYLE", "YOUR BUILD"];
 
 export default function DiscoverPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<DiscoverNext | null>(null);
   const [userId, setUserId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,7 +29,14 @@ export default function DiscoverPage() {
     try { const uid = await ensureSession("unsure"); setUserId(uid); const next = await api.discoverNext(uid); if (next.done) router.push("/discover/results"); else { setData(next); setPicked(null); } }
     catch (e) { setError(e instanceof Error ? e.message : "เปิด Character Creation ไม่สำเร็จ"); }
   }, [router]);
-  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  useEffect(() => {
+    if (searchParams.get("fresh") === "1") {
+      session.clear();
+      router.replace("/discover");
+      return;
+    }
+    void Promise.resolve().then(load);
+  }, [load, router, searchParams]);
 
   async function choose(answer: ActivityAnswer) {
     if (!data?.item || !userId || busy) return;
@@ -48,7 +56,7 @@ export default function DiscoverPage() {
   return <div className="min-h-screen bg-[#061323] text-white overflow-hidden relative">
     <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(115deg, rgba(20,74,126,.5), transparent 48%), radial-gradient(circle at 78% 22%, rgba(244,157,50,.22), transparent 0 9%, transparent 32%), radial-gradient(circle at 14% 88%, rgba(45,129,213,.2), transparent 0 12%, transparent 32%)" }} />
     <div className="absolute inset-0 opacity-[.12] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
-    <header className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 h-20 flex items-center justify-between"><button onClick={() => router.push("/")} className="text-xl font-bold tracking-tight">SIIT <span className="text-[#78b7ff]">QUEST</span></button><button onClick={() => router.push("/targets")} className="text-sm text-white/60 hover:text-white">ข้ามไปเลือกอาชีพเอง</button></header>
+    <header className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 h-20 flex items-center justify-between"><button onClick={() => router.push("/")} className="text-xl font-bold tracking-tight">SIIT <span className="text-[#78b7ff]">QUEST</span></button><div className="flex items-center gap-4"><button onClick={() => { session.clear(); void load(); }} className="text-sm text-white/60 hover:text-white">เริ่ม Character ใหม่</button><button onClick={() => router.push("/targets")} className="text-sm text-white/60 hover:text-white">ข้ามไปเลือกอาชีพเอง</button></div></header>
     <main className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 pb-10 min-h-[calc(100vh-80px)] flex items-center">
       {error && <div className="w-full max-w-3xl mx-auto"><InlineNotice tone="error">{error} <button className="underline" onClick={load}>ลองใหม่</button></InlineNotice></div>}
       {!data && !error && <div className="w-full text-center text-white/60"><Icon className="text-5xl animate-pulse text-[#78b7ff]">stars</Icon><p className="mt-4">กำลังสร้าง character sheet ของคุณ…</p></div>}

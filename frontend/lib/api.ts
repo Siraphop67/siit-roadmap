@@ -239,6 +239,35 @@ export type StepOption = {
   blocked_reason: string | null;
 };
 
+/** รายละเอียดหน้า Course — backend บอกผลที่มีต่อ roadmap โดยไม่ส่งกราฟทั้งใบ */
+export type ResourceDetail = {
+  id: string;
+  kind: ResourceKind;
+  kind_label: string;
+  title: string;
+  provider: string | null;
+  description: string;
+  url: string | null;
+  est_hours: number;
+  cost_baht: number;
+  min_year: number;
+  proof_of_done: string;
+  data_status: string;
+  teaches: {
+    skill_id: string;
+    name_th: string;
+    name_en: string;
+    reaches_level: number;
+    current_level: number | null;
+    roadmap_status: StepStatus | null;
+    roadmap_target_level: number | null;
+    unlock_count: number;
+  }[];
+  roadmap_context: { target_id: string; title_th: string; title_en: string } | null;
+  example_learning_flow: { order: number; title: string; detail: string; est_hours: number }[];
+  note: string;
+};
+
 export type RoadmapStep = {
   skill_id: string;
   name_th: string;
@@ -830,6 +859,10 @@ export const api = {
   /** อาชีพที่เคยเปิด roadmap แล้ว เรียงจากล่าสุด — ไม่ใช่รายการที่กดบันทึกไว้ */
   roadmaps: (userId: string) =>
     call<RoadmapListResponse>(`/roadmaps${q({ user_id: userId })}`),
+
+  /** หน้า course จาก roadmap — targetId ทำให้ API อธิบายผลต่อเส้นทางที่เลือกได้ */
+  resource: (resourceId: string, userId?: string | null, targetId?: string | null) =>
+    call<ResourceDetail>(`/resources/${encodeURIComponent(resourceId)}${q({ user_id: userId, target_id: targetId })}`),
 
   // ── กราฟทักษะ ──
   /** ส่ง userId ถ้ามี — จะได้รู้ว่า node ไหนผู้ใช้มีแล้ว · ไม่ส่งก็ดูกราฟได้ */

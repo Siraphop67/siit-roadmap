@@ -237,6 +237,24 @@ def test_roadmap_walks_end_to_end(client, ready):
     assert any(s["actionable"] for s in rm["steps"])
 
 
+def test_course_detail_explains_its_effect_on_the_active_roadmap(client, ready):
+    """กด card จาก Roadmap แล้วต้องรู้ว่า course เพิ่มทักษะใดและพาไปต่อไหน."""
+    data = client.get("/api/resources/C-PY-INTRO", params={
+        "user_id": ready, "target_id": "SW-DEV"}).json()
+    assert data["id"] == "C-PY-INTRO"
+    assert data["roadmap_context"]["target_id"] == "SW-DEV"
+    assert data["teaches"]
+    assert all("roadmap_status" in skill for skill in data["teaches"])
+    assert len(data["example_learning_flow"]) == 3
+    assert data["example_learning_flow"][-1]["detail"] == data["proof_of_done"]
+
+
+def test_course_detail_is_readable_without_a_session(client):
+    data = client.get("/api/resources/C-PY-INTRO").json()
+    assert data["roadmap_context"] is None
+    assert data["teaches"]
+
+
 def test_every_step_offers_at_least_one_way_forward(client, ready):
     rm = client.get("/api/roadmap", params={"user_id": ready}).json()
     for s in rm["steps"]:

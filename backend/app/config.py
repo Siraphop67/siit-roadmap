@@ -58,6 +58,15 @@ class Settings:
         return self.database_url.startswith("postgres")
 
     @property
+    def llm_model_in_use(self) -> str:
+        """ชื่อรุ่นที่ใช้อยู่จริงตาม provider — /meta เอาไปบอกผู้ใช้ว่ากำลังอ่านด้วยอะไร"""
+        if self.llm_provider.lower() == "local":
+            return self.local_llm_model
+        if self.llm_provider.lower() == "anthropic":
+            return self.llm_model
+        return self.llm_provider
+
+    @property
     def llm_is_real(self) -> bool:
         """มี LLM จริงอยู่เบื้องหลังไหม — ใช้รายงานตามตรงบนหน้าจอและใน /health
 

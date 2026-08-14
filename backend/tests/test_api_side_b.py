@@ -72,6 +72,25 @@ def test_meta_states_plainly_what_is_not_real_yet(client):
     assert "ไม่ใช่ LLM" in m["notes"]["extractor"]
 
 
+def test_meta_reports_the_real_extractor(client, monkeypatch):
+    """🔒 กติกาข้อ 5 — สลับไปใช้ LLM จริงแล้ว หน้าจอต้องเลิกพูดว่า "ไม่ใช่ LLM"
+
+    เจอตอนสลับ LLM_PROVIDER=local เพื่อทดสอบ: /health บอกว่าเป็น LLM แล้ว
+    แต่ข้อความใน /meta ยังเขียนตายตัวว่าใช้การจับคำสำคัญ — ซึ่งขึ้นจอตรง ๆ
+    """
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "local")
+    monkeypatch.setattr(settings, "local_llm_model", "gemma4:26b")
+    m = client.get("/api/meta").json()
+
+    assert m["extractor"] == "local"
+    assert "ไม่ใช่ LLM" not in m["notes"]["extractor"], "ใช้ LLM อยู่ ห้ามบอกว่าไม่ใช่"
+    assert "gemma4:26b" in m["notes"]["extractor"], "ต้องบอกด้วยว่าอ่านด้วยรุ่นไหน"
+    # ⭐ ต่อให้เป็น LLM จริง กติกาข้อ 2 กับ 3 ก็ยังต้องถูกย้ำบนหน้าจอ
+    assert "ยืนยัน" in m["notes"]["extractor"]
+
+
 # ═══════════ คลังอาชีพ ═══════════
 
 

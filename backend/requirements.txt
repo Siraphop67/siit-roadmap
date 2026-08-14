@@ -11,6 +11,9 @@ pymupdf==1.25.1
 # ใช้เฉพาะเมื่อ LLM_PROVIDER=anthropic — ค่าเริ่มต้นคือ keyword ซึ่งไม่ต้องใช้ตัวนี้
 # นำเข้าแบบ lazy ใน app/llm/anthropic.py ระบบจึงรันได้แม้ยังไม่ได้ติดตั้ง
 anthropic==0.121.0
+
+# ใช้เฉพาะเมื่อ LLM_PROVIDER=gemini · นำเข้าแบบ lazy ใน app/llm/google.py เช่นกัน
+google-genai==1.46.0
 httpx==0.28.1
 pytest==8.3.4
 pyyaml==6.0.3

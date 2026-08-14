@@ -30,12 +30,12 @@ const dots = ["#005bb2", "#d4402e", "#8b4c00", "#3274cd", "#585f6a", "#4d8b68", 
 const COLUMNS: { relation: SkillRelation; title: string; hint: string; color: string }[] = [
   {
     relation: "prereq_missing",
-    title: "ยังขาด",
-    hint: "ต้องมีก่อนถึงจะต่อยอดสิ่งที่คุณมีได้",
+    title: "ทักษะที่ยังขาด",
+    hint: "ต้องมีก่อน ถึงจะต่อยอดจากที่คุณมีอยู่ได้",
     color: "#8b4c00",
   },
-  { relation: "have", title: "คุณมีแล้ว", hint: "ยืนยันจาก CV หรือประเมินเอง", color: "#005bb2" },
-  { relation: "next", title: "ไปต่อได้ทันที", hint: "ต่อยอดจากสิ่งที่คุณมีตอนนี้", color: "#4d8b68" },
+  { relation: "have", title: "ทักษะที่คุณมีแล้ว", hint: "ยืนยันจาก CV หรือประเมินด้วยตนเอง", color: "#005bb2" },
+  { relation: "next", title: "พัฒนาต่อได้ทันที", hint: "ต่อยอดจากที่คุณมีอยู่ตอนนี้", color: "#4d8b68" },
 ];
 
 const COL_X = [190, 520, 850];
@@ -86,7 +86,7 @@ export default function SkillsPage() {
         if (first) setSelected(first.id);
       })
       .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : "โหลดกราฟทักษะไม่สำเร็จ");
+        if (alive) setError(e instanceof Error ? e.message : "เปิดแผนผังทักษะไม่ได้ในตอนนี้");
       });
     return () => {
       alive = false;
@@ -150,8 +150,8 @@ export default function SkillsPage() {
 
   const subtitle =
     view === "mine" && graph
-      ? `คุณมี ${graph.counts.have} ทักษะ · ยังขาด ${graph.counts.prereq_missing} ตัวที่ขวางอยู่ · ไปต่อได้ทันที ${graph.counts.next} ตัว`
-      : `ทักษะทั้งหมดที่ระบบรู้จัก ${graph?.counts.skills ?? 73} ตัว และ ${graph?.counts.edges ?? 105} ความสัมพันธ์`;
+      ? `คุณมี ${graph.counts.have} ทักษะ · ยังขาด ${graph.counts.prereq_missing} ทักษะ · พัฒนาต่อได้ทันที ${graph.counts.next} ทักษะ`
+      : `ทักษะทั้งหมดที่เรารู้จัก ${graph?.counts.skills ?? 73} ทักษะ และความสัมพันธ์ ${graph?.counts.edges ?? 105} รายการ`;
 
   return (
     <div className="flex h-screen w-full bg-surface-bg overflow-hidden pb-16 lg:pb-0">
@@ -160,7 +160,7 @@ export default function SkillsPage() {
         <header className="px-margin-mobile md:px-gutter py-stack-md border-b border-border-low bg-surface-bg/90 backdrop-blur-sm z-10 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
             <h1 className="text-headline-md font-headline-md font-semibold text-text-main">
-              {view === "mine" ? "Skill Graph ของคุณ" : "Skill Graph ทั้งหมด"}
+              {view === "mine" ? "แผนผังทักษะของคุณ" : "แผนผังทักษะทั้งหมด"}
             </h1>
             <p className="text-sm sm:text-body-md text-text-subtle">{subtitle}</p>
           </div>
@@ -173,7 +173,7 @@ export default function SkillsPage() {
                   onClick={() => setChosen(value)}
                   disabled={value === "mine" && !uid}
                   title={
-                    value === "mine" && !uid ? "ต้องเริ่มใช้งานก่อนถึงจะมีกราฟของตัวเอง" : undefined
+                    value === "mine" && !uid ? "ต้องเริ่มใช้งานก่อน ถึงจะมีแผนผังของตัวเอง" : undefined
                   }
                   className={`px-3 py-2 disabled:opacity-40 ${
                     scope === value
@@ -223,7 +223,7 @@ export default function SkillsPage() {
             </InlineNotice>
           </div>
         )}
-        {!graph && !error && <p className="m-auto text-text-subtle">กำลังสร้างกราฟ…</p>}
+        {!graph && !error && <p className="m-auto text-text-subtle">กำลังวาดแผนผังทักษะ</p>}
 
         {/* 🔒 ว่างเปล่าเงียบ ๆ ไม่ได้ — บอกเหตุผลและทางไปต่อ ตามที่ API ส่งมา */}
         {graph && graph.empty_message && (
@@ -233,10 +233,10 @@ export default function SkillsPage() {
               href="/portfolio"
               className="inline-block px-4 py-2 bg-primary text-on-primary rounded-lg"
             >
-              ส่งผลงานของคุณ
+              ส่งแฟ้มผลงานของคุณ
             </a>
             <button className="block mx-auto mt-stack-md underline text-sm text-text-subtle" onClick={() => setChosen("all")}>
-              หรือดูทักษะทั้งหมดที่ระบบรู้จักก่อน
+              หรือดูทักษะทั้งหมดที่เรารู้จักก่อน
             </button>
           </div>
         )}
@@ -245,7 +245,7 @@ export default function SkillsPage() {
           <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
             <section
               className="flex-1 graph-bg relative overflow-auto cursor-grab"
-              aria-label="กราฟความสัมพันธ์ของทักษะ"
+              aria-label="แผนผังความสัมพันธ์ของทักษะ"
             >
               <div className="relative" style={{ width: canvasWidth, height: canvasHeight }}>
                 <svg
@@ -336,7 +336,7 @@ export default function SkillsPage() {
                           )}
                           {hasSelf && (
                             <span className="text-[9px] bg-tertiary-fixed text-tertiary px-1.5 py-0.5 rounded">
-                              ประเมินเอง L{node.level_self_reported}
+                              ประเมินตนเอง L{node.level_self_reported}
                             </span>
                           )}
                         </div>
@@ -369,13 +369,13 @@ export default function SkillsPage() {
                       )}
                       {detail.you?.level_self_reported != null && (
                         <span className="text-xs bg-tertiary-fixed text-tertiary px-2 py-1 rounded-full">
-                          ประเมินเอง · ระดับ {detail.you.level_self_reported}
+                          ประเมินด้วยตนเอง · ระดับ {detail.you.level_self_reported}
                         </span>
                       )}
                     </div>
                     {detail.unlocks_total > 0 && (
                       <p className="mt-2 text-xs text-text-subtle">
-                        ได้ทักษะนี้แล้วเปิดทางไปอีก {detail.unlocks_total} ทักษะ
+                        ได้ทักษะนี้แล้ว จะเปิดทางไปอีก {detail.unlocks_total} ทักษะ
                       </p>
                     )}
                   </div>
@@ -405,7 +405,7 @@ export default function SkillsPage() {
                     </section>
                     <section>
                       <h3 className="font-semibold mb-stack-sm flex items-center gap-2">
-                        <Icon className="text-text-subtle">school</Icon>เรียนจากไหนได้
+                        <Icon className="text-text-subtle">school</Icon>ช่องทางการเรียนรู้
                       </h3>
                       <div className="space-y-3">
                         {detail.resources.map((resource) => (

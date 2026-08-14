@@ -68,7 +68,7 @@ export default function EmployerFormPage() {
       // API ส่งข้อผิดพลาดกลับทุกข้อพร้อมกัน แสดงทั้งหมดเพื่อให้แก้รอบเดียว
       const detail = submissionErrors(e);
       if (detail) setErrors(detail.errors);
-      else setFailed(e instanceof Error ? e.message : "ส่งไม่สำเร็จ");
+      else setFailed(e instanceof Error ? e.message : "ไม่สามารถส่งประกาศได้");
     } finally {
       setBusy(false);
     }
@@ -76,15 +76,15 @@ export default function EmployerFormPage() {
 
   if (done) {
     return (
-      <Page title="ได้รับประกาศแล้ว">
+      <Page title="ได้รับประกาศเรียบร้อยแล้ว">
         <div className="space-y-5">
-          <Note tone="ok" title="ประกาศเข้าคิวรอตรวจเรียบร้อย">
+          <Note tone="ok" title="ประกาศเข้าคิวรอตรวจแล้ว">
             {done.message}
           </Note>
 
           <div className="rounded-lg border border-zinc-300 px-4 py-3.5 dark:border-zinc-700">
             <p className="text-[0.8rem] font-semibold uppercase tracking-wider text-zinc-500">
-              เก็บรหัสนี้ไว้ — ใช้เช็คสถานะ
+              กรุณาเก็บรหัสนี้ไว้สำหรับตรวจสอบสถานะ
             </p>
             <p className="mt-1 font-mono text-[1.05rem] font-bold break-all">
               {done.posting_id}
@@ -93,12 +93,12 @@ export default function EmployerFormPage() {
               href={`/employer/status/${done.posting_id}`}
               className="mt-2 inline-block text-[0.92rem] font-semibold underline underline-offset-4"
             >
-              เปิดหน้าเช็คสถานะ →
+              เปิดหน้าตรวจสอบสถานะ →
             </Link>
           </div>
 
           {done.warnings.length > 0 && (
-            <Note tone="warn" title="ข้อสังเกต — ส่งได้แล้ว แต่ใส่เพิ่มจะดีกว่า">
+            <Note tone="warn" title="ข้อสังเกต — ส่งได้แล้ว แต่เพิ่มอีกนิดจะดีกว่า">
               <ul className="list-disc space-y-1 pl-5">
                 {done.warnings.map((w) => (
                   <li key={w}>{w}</li>
@@ -114,7 +114,7 @@ export default function EmployerFormPage() {
             }}
             className="rounded-lg border border-zinc-400 px-4 py-2 text-[0.95rem] font-semibold dark:border-zinc-600"
           >
-            ลงประกาศอีกอัน
+            ลงประกาศฉบับใหม่
           </button>
         </div>
       </Page>
@@ -124,7 +124,7 @@ export default function EmployerFormPage() {
   if (failed && !meta) {
     return (
       <Page title="ลงประกาศรับสมัคร">
-        <Note tone="warn" title="โหลดหน้าไม่สำเร็จ">
+        <Note tone="warn" title="ไม่สามารถโหลดหน้านี้ได้">
           {failed}
         </Note>
       </Page>
@@ -134,7 +134,7 @@ export default function EmployerFormPage() {
   if (!meta) {
     return (
       <Page title="ลงประกาศรับสมัคร">
-        <p className="text-zinc-500">กำลังโหลด…</p>
+        <p className="text-zinc-500">กำลังโหลดข้อมูล</p>
       </Page>
     );
   }
@@ -150,7 +150,7 @@ export default function EmployerFormPage() {
     >
       <div className="space-y-6">
         {/* 🔒 บอกกติกาก่อนเขาเสียเวลากรอก ไม่ใช่หลังกดส่ง */}
-        <Note tone="info" title="อ่านก่อนกรอก">
+        <Note tone="info" title="โปรดอ่านก่อนกรอกข้อมูล">
           <ul className="list-disc space-y-1 pl-5">
             <li>{meta.notes.review}</li>
             <li>{meta.notes.privacy}</li>
@@ -180,7 +180,7 @@ export default function EmployerFormPage() {
           </Field>
         </div>
 
-        <Field label="ลิงก์ประกาศ" required hint="หน้าที่นักศึกษาจะไปสมัคร">
+        <Field label="ลิงก์ประกาศ" required hint="หน้าเว็บที่นักศึกษาจะใช้สมัคร">
           <input
             className={inputClass}
             value={form.url}
@@ -233,13 +233,13 @@ export default function EmployerFormPage() {
             }
           />
           <p className="mt-1 text-[0.82rem] text-zinc-500">
-            {form.raw_text.length} ตัวอักษร · ยิ่งใส่คุณสมบัติและหน้าที่ครบ
-            ระบบยิ่งบอกนักศึกษาได้แม่นว่าต้องเตรียมอะไร
+            {form.raw_text.length} ตัวอักษร · หากระบุคุณสมบัติและหน้าที่ความรับผิดชอบครบถ้วน
+            ระบบจะแจ้งนักศึกษาได้แม่นยำยิ่งขึ้นว่าต้องเตรียมความพร้อมด้านใด
           </p>
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="อีเมลติดต่อ" hint="ใส่ตรงนี้ ไม่ใช่ในตัวข้อความประกาศ">
+          <Field label="อีเมลติดต่อ" hint="กรอกในช่องนี้ ไม่ใช่ในเนื้อความประกาศ">
             <input
               className={inputClass}
               value={form.contact_email ?? ""}
@@ -248,7 +248,7 @@ export default function EmployerFormPage() {
             />
           </Field>
 
-          <Field label="ผู้กรอกแบบฟอร์ม" required hint="ไว้ติดต่อกลับตอนข้อมูลดูไม่ชัด">
+          <Field label="ผู้กรอกแบบฟอร์ม" required hint="สำหรับติดต่อกลับเมื่อข้อมูลไม่ชัดเจน">
             <input
               className={inputClass}
               value={form.submitted_by}
@@ -260,10 +260,10 @@ export default function EmployerFormPage() {
 
         <details className="rounded-lg border border-zinc-300 px-4 py-3 dark:border-zinc-700">
           <summary className="cursor-pointer text-[0.95rem] font-semibold">
-            ใส่เพิ่มได้ — ช่วยให้จับคู่กับนักศึกษาแม่นขึ้น
+            ข้อมูลเพิ่มเติม ช่วยให้การจับคู่กับนักศึกษาแม่นยำยิ่งขึ้น
           </summary>
           <div className="mt-4 grid gap-5 sm:grid-cols-2">
-            <Field label="อาชีพที่ตรงที่สุด" hint="ไม่แน่ใจให้ข้ามไป">
+            <Field label="อาชีพที่ตรงที่สุด" hint="หากไม่แน่ใจสามารถข้ามได้">
               <select
                 className={inputClass}
                 value={form.target_id ?? ""}
@@ -313,7 +313,7 @@ export default function EmployerFormPage() {
             disabled={!ready || busy}
             className="rounded-lg bg-zinc-900 px-5 py-2.5 text-[0.95rem] font-semibold text-white transition disabled:bg-zinc-400 dark:bg-zinc-100 dark:text-zinc-900 dark:disabled:bg-zinc-700"
           >
-            {busy ? "กำลังส่ง…" : "ส่งประกาศเข้าคิวตรวจ"}
+            {busy ? "กำลังส่งข้อมูล" : "ส่งประกาศเพื่อรอการตรวจสอบ"}
           </button>
           {!ready && (
             <span className="text-[0.9rem] text-zinc-500">

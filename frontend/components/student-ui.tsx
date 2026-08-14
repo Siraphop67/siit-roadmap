@@ -61,11 +61,12 @@ export function Icon({ children, className = "" }: { children: string; className
 }
 
 export function TopNav({ active = "Explore", brand = "SIIT Roadmap" }: { active?: string; brand?: string }) {
+  // id ใช้จับคู่กับ prop `active` · label คือข้อความที่ผู้ใช้เห็น
   const links = [
-    ["Explore", "/"],
-    ["Roadmaps", "/roadmap"],
-    ["Library", "/targets"],
-    ["Profile", "/portfolio"],
+    ["Explore", "หน้าแรก", "/"],
+    ["Roadmaps", "เส้นทางพัฒนาอาชีพ", "/roadmap"],
+    ["Library", "คลังข้อมูลอาชีพ", "/targets"],
+    ["Profile", "แฟ้มผลงาน", "/portfolio"],
   ];
   return (
     <header className="bg-surface-bg border-b border-border-low sticky top-0 z-50">
@@ -73,12 +74,12 @@ export function TopNav({ active = "Explore", brand = "SIIT Roadmap" }: { active?
         <div className="flex items-center gap-8 min-w-0">
           <Link className="font-headline-md text-xl sm:text-headline-md font-bold text-on-surface whitespace-nowrap" href="/">{brand}</Link>
           <nav className="hidden md:flex gap-6">
-            {links.map(([label, href]) => (
-              <Link key={label} href={href} className={`font-body-md text-body-md pb-1 transition-colors ${active === label ? "text-primary border-b-2 border-primary" : "text-secondary hover:text-primary"}`}>{label}</Link>
+            {links.map(([id, label, href]) => (
+              <Link key={id} href={href} className={`font-body-md text-body-md pb-1 transition-colors ${active === id ? "text-primary border-b-2 border-primary" : "text-secondary hover:text-primary"}`}>{label}</Link>
             ))}
           </nav>
         </div>
-        <Link href="/discover" className="font-body-md text-sm sm:text-body-md bg-primary text-on-primary px-4 py-2 rounded-lg hover:bg-primary-container transition-colors">Get Started</Link>
+        <Link href="/discover" className="font-body-md text-sm sm:text-body-md bg-primary text-on-primary px-4 py-2 rounded-lg hover:bg-primary-container transition-colors">เริ่มต้นใช้งาน</Link>
       </div>
     </header>
   );
@@ -91,12 +92,12 @@ export function DiscoverNav({ active = "Pathfinding" }: { active?: string }) {
         <div className="flex items-center gap-stack-lg">
           <Link className="font-headline-md text-xl sm:text-headline-md font-bold text-primary" href="/">SIIT Discover</Link>
           <nav className="hidden md:flex gap-stack-md">
-            {[["Pathfinding", "/discover"], ["Libraries", "/targets"], ["Roadmaps", "/roadmap"], ["Skills", "/skills"]].map(([label, href]) => (
-              <Link key={label} className={`${active === label ? "text-primary font-bold border-b-2 border-primary" : "text-secondary hover:text-primary"} transition-colors text-body-md pb-1`} href={href}>{label}</Link>
+            {[["Pathfinding", "ค้นหาแนวทาง", "/discover"], ["Libraries", "คลังข้อมูลอาชีพ", "/targets"], ["Roadmaps", "เส้นทางพัฒนาอาชีพ", "/roadmap"], ["Skills", "ทักษะ", "/skills"]].map(([id, label, href]) => (
+              <Link key={id} className={`${active === id ? "text-primary font-bold border-b-2 border-primary" : "text-secondary hover:text-primary"} transition-colors text-body-md pb-1`} href={href}>{label}</Link>
             ))}
           </nav>
         </div>
-        <Link href="/portfolio" className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm sm:text-body-md hover:bg-primary-container transition-colors">เพิ่มผลงาน</Link>
+        <Link href="/portfolio" className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm sm:text-body-md hover:bg-primary-container transition-colors">เพิ่มแฟ้มผลงาน</Link>
       </div>
     </header>
   );
@@ -107,36 +108,36 @@ type WorkspaceActive = "workspace" | "quiz" | "portfolio" | "targets" | "roadmap
 export function WorkspaceSidebar({ active, variant = "helpful" }: { active: WorkspaceActive; variant?: "helpful" | "graph" }) {
   const links: { id: WorkspaceActive; label: string; icon: string; href: string }[] = variant === "graph"
     ? [
-        { id: "workspace", label: "My Workspace", icon: "grid_view", href: "/" },
-        { id: "skills", label: "Skill Graph", icon: "hub", href: "/skills" },
-        { id: "roadmap", label: "Roadmaps", icon: "route", href: "/roadmap" },
-        { id: "targets", label: "Career Library", icon: "menu_book", href: "/targets" },
-        { id: "portfolio", label: "Skill Extraction", icon: "psychology_alt", href: "/portfolio" },
-        { id: "profile", label: "โปรไฟล์ของฉัน", icon: "person", href: "/profile" },
+        { id: "workspace", label: "พื้นที่ทำงานของฉัน", icon: "grid_view", href: "/" },
+        { id: "skills", label: "แผนผังทักษะ", icon: "hub", href: "/skills" },
+        { id: "roadmap", label: "เส้นทางพัฒนาอาชีพ", icon: "route", href: "/roadmap" },
+        { id: "targets", label: "คลังข้อมูลอาชีพ", icon: "menu_book", href: "/targets" },
+        { id: "portfolio", label: "การสกัดทักษะ", icon: "psychology_alt", href: "/portfolio" },
+        { id: "profile", label: "ข้อมูลส่วนตัว", icon: "person", href: "/profile" },
       ]
     : [
-        { id: "workspace", label: "Dashboard", icon: "dashboard", href: "/" },
-        { id: "quiz", label: "Activity Quiz", icon: "quiz", href: "/discover" },
-        { id: "portfolio", label: "Skill Extraction", icon: "psychology_alt", href: "/portfolio" },
-        { id: "targets", label: "Career Library", icon: "menu_book", href: "/targets" },
-        { id: "roadmap", label: "My Roadmap", icon: "route", href: "/roadmap" },
-        { id: "profile", label: "โปรไฟล์ของฉัน", icon: "person", href: "/profile" },
+        { id: "workspace", label: "ภาพรวม", icon: "dashboard", href: "/" },
+        { id: "quiz", label: "แบบประเมินความสนใจ", icon: "quiz", href: "/discover" },
+        { id: "portfolio", label: "การสกัดทักษะ", icon: "psychology_alt", href: "/portfolio" },
+        { id: "targets", label: "คลังข้อมูลอาชีพ", icon: "menu_book", href: "/targets" },
+        { id: "roadmap", label: "เส้นทางพัฒนาของฉัน", icon: "route", href: "/roadmap" },
+        { id: "profile", label: "ข้อมูลส่วนตัว", icon: "person", href: "/profile" },
       ];
   return (
     <aside className="hidden lg:flex flex-col h-screen sticky top-0 p-stack-md bg-surface-muted border-r border-border-low w-64 z-40 shrink-0">
       <div className="mb-stack-lg flex items-center gap-3 px-3">
         <span className="w-10 h-10 rounded-lg bg-primary-fixed text-primary grid place-items-center"><Icon>{variant === "graph" ? "hub" : "route"}</Icon></span>
-        <div><h2 className="font-headline-md text-lg font-bold text-on-surface">{variant === "graph" ? "SIIT Workspace" : "Helpful Senior"}</h2><p className="font-label-sm text-xs text-text-subtle">Career Workspace</p></div>
+        <div><h2 className="font-headline-md text-lg font-bold text-on-surface">{variant === "graph" ? "SIIT Workspace" : "รุ่นพี่แนะแนว"}</h2><p className="font-label-sm text-xs text-text-subtle">พื้นที่วางแผนอาชีพ</p></div>
       </div>
-      <Link href="/discover" className="mx-2 mb-stack-md bg-primary text-on-primary font-label-sm text-label-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-colors"><Icon className="text-sm">add</Icon> New Analysis</Link>
+      <Link href="/discover" className="mx-2 mb-stack-md bg-primary text-on-primary font-label-sm text-label-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-colors"><Icon className="text-sm">add</Icon> เริ่มวิเคราะห์ใหม่</Link>
       <nav className="flex-1 flex flex-col gap-1 px-2">
         {links.map((item) => (
           <Link key={item.id} href={item.href} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg font-label-sm text-label-sm transition-all ${active === item.id ? "bg-secondary-container text-primary font-bold" : "text-secondary hover:bg-surface-container"}`}><Icon>{item.icon}</Icon>{item.label}</Link>
         ))}
       </nav>
       <div className="mt-auto pt-4 border-t border-border-low px-2 flex flex-col gap-1">
-        <Link className="flex items-center gap-3 px-4 py-2 rounded-lg text-secondary hover:bg-surface-container" href="/portfolio"><Icon>settings</Icon>Settings</Link>
-        <Link className="flex items-center gap-3 px-4 py-2 rounded-lg text-secondary hover:bg-surface-container" href="/"><Icon>help</Icon>Support</Link>
+        <Link className="flex items-center gap-3 px-4 py-2 rounded-lg text-secondary hover:bg-surface-container" href="/portfolio"><Icon>settings</Icon>ตั้งค่า</Link>
+        <Link className="flex items-center gap-3 px-4 py-2 rounded-lg text-secondary hover:bg-surface-container" href="/"><Icon>help</Icon>ความช่วยเหลือ</Link>
       </div>
     </aside>
   );
@@ -144,11 +145,11 @@ export function WorkspaceSidebar({ active, variant = "helpful" }: { active: Work
 
 export function MobileWorkspaceNav({ active }: { active: WorkspaceActive }) {
   const links = [
-    ["workspace", "grid_view", "Home", "/"],
-    ["skills", "hub", "Skills", "/skills"],
-    ["roadmap", "route", "Roadmap", "/roadmap"],
-    ["targets", "menu_book", "Library", "/targets"],
-    ["profile", "person", "Profile", "/profile"],
+    ["workspace", "grid_view", "หน้าแรก", "/"],
+    ["skills", "hub", "ทักษะ", "/skills"],
+    ["roadmap", "route", "เส้นทางพัฒนา", "/roadmap"],
+    ["targets", "menu_book", "คลังอาชีพ", "/targets"],
+    ["profile", "person", "ข้อมูลส่วนตัว", "/profile"],
   ];
   return (
     <nav className="fixed bottom-0 w-full z-50 lg:hidden rounded-t-xl border-t border-border-low bg-surface-bg shadow-lg no-print">
@@ -164,8 +165,8 @@ export function SiteFooter({ discover = false }: { discover?: boolean }) {
     <footer className="bg-surface-muted border-t border-border-low w-full mt-auto">
       <div className="py-stack-lg px-gutter max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center gap-stack-md">
         <div className="font-headline-md text-xl sm:text-headline-md font-bold text-secondary">{discover ? "SIIT Discover" : "SIIT Roadmap"}</div>
-        <nav className="flex flex-wrap justify-center gap-stack-md text-label-sm"><Link className="text-text-subtle hover:text-primary" href="/">Privacy Policy</Link><Link className="text-text-subtle hover:text-primary" href="/">Terms of Service</Link><Link className="text-text-subtle hover:text-primary" href="/">Contact</Link></nav>
-        <p className="text-xs sm:text-sm text-text-subtle text-center">© 2026 SIIT Roadmap. Built for growth.</p>
+        <nav className="flex flex-wrap justify-center gap-stack-md text-label-sm"><Link className="text-text-subtle hover:text-primary" href="/">นโยบายความเป็นส่วนตัว</Link><Link className="text-text-subtle hover:text-primary" href="/">เงื่อนไขการให้บริการ</Link><Link className="text-text-subtle hover:text-primary" href="/">ติดต่อเรา</Link></nav>
+        <p className="text-xs sm:text-sm text-text-subtle text-center">© 2026 SIIT Roadmap · สร้างขึ้นเพื่อการเติบโตของนักศึกษา</p>
       </div>
     </footer>
   );

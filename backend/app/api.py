@@ -10,6 +10,7 @@
   ★ ROADMAP ★     GET  /roadmap
   รายละเอียดคอร์ส   GET  /resources/{id}
   เส้นทางของฉัน     GET  /roadmaps
+  กลับมาทำต่อ       GET  /me/resume
   ข้อมูลของฉัน      GET  /me · DELETE /me
 """
 
@@ -866,6 +867,119 @@ def list_roadmaps(user_id: str, db: Session = Depends(get_db)) -> dict:
         "roadmaps": out,
         "empty_message": "",
         "note": "รายการนี้คืออาชีพที่เคยเปิดดู ไม่ใช่รายการที่กดบันทึกไว้",
+    }
+
+
+# ═════════════════════ กลับมาทำต่อ ═════════════════════
+
+
+@router.get("/me/resume")
+def resume(user_id: str, db: Session = Depends(get_db)) -> dict:
+    """★ "ครั้งก่อนค้างไว้ตรงไหน" — คำตอบเดียวที่หน้าโปรไฟล์ต้องใช้
+
+    🔴 ทำไมต้องเป็น endpoint เดียว ไม่ให้หน้าจอประกอบเอง
+       ลำดับขั้นของเส้นทางนี้เป็นกติกาของระบบ (ยืนยันทักษะก่อนถึงนับ · ต้องมีเป้าหมาย
+       ก่อนถึงมี roadmap) ถ้าหน้าจอเดาลำดับเอง วันที่กติกาเปลี่ยน หน้าจอจะพาผู้ใช้
+       ไปผิดที่โดยไม่มีอะไรฟ้อง · ที่นี่รู้กติกาอยู่แล้ว จึงตอบให้ได้ว่า "ไปต่อที่ไหน"
+
+    ผู้ใช้ที่ปิดแท็บไปแล้วกลับมา ไม่ควรต้องเดาว่าตัวเองทำอะไรค้างไว้ —
+    และไม่ควรต้องเริ่มใหม่เพราะจำไม่ได้
+    """
+    user = _user(db, user_id)
+
+    profile = db.scalar(select(LearnerProfile).where(LearnerProfile.user_id == user_id))
+    documents = db.scalars(select(UserDocument).where(
+        UserDocument.user_id == user_id).order_by(UserDocument.uploaded_at.desc())).all()
+    pending = db.scalars(select(ExtractedSkill).where(
+        ExtractedSkill.user_id == user_id,
+        ExtractedSkill.user_status == "pending")).all()
+    confirmed = _confirmed_skills(db, user_id)
+    self_reported = _self_reported(db, user_id)
+    answered = db.query(ActivityResponse).filter(
+        ActivityResponse.user_id == user_id).count()
+    goal = db.scalar(select(UserGoal).where(
+        UserGoal.user_id == user_id, UserGoal.is_primary.is_(True)))
+    roadmaps = db.query(Roadmap).filter(Roadmap.user_id == user_id).count()
+
+    target = db.get(CareerTarget, goal.target_id) if goal else None
+    latest_doc = documents[0] if documents else None
+
+    # ลำดับเดียวกับที่ระบบบังคับจริง — ไม่ใช่ลำดับที่หน้าจออยากให้เป็น
+    steps = [
+        {
+            "id": "profile",
+            "title": "บอกข้อมูลพื้นฐานของคุณ",
+            "done": bool(profile and profile.field),
+            "detail": (
+                " · ".join(filter(None, [
+                    profile.field if profile else None,
+                    profile.education_level if profile else None,
+                    f"ว่างสัปดาห์ละ {profile.hours_per_week} ชม."
+                    if profile and profile.hours_per_week else None,
+                ])) if profile else "ยังไม่ได้กรอก"
+            ),
+            # ชี้ไปที่ฟอร์มบนหน้าโปรไฟล์ตรง ๆ — ปุ่ม "ทำต่อ" ที่พากลับมาหน้าเดิม
+            # โดยไม่มีอะไรให้ทำ คือทางตัน ไม่ใช่ขั้นตอน
+            "href": "/profile#basics",
+        },
+        {
+            "id": "portfolio",
+            "title": "ส่งผลงานให้ระบบอ่าน",
+            "done": bool(documents),
+            "detail": (
+                f"ส่งแล้ว {len(documents)} ฉบับ" if documents else "ยังไม่ได้ส่ง"
+            ),
+            "href": "/portfolio",
+        },
+        {
+            # 🔒 กติกาข้อ 3 — สกัดได้แล้วยังไม่นับ จนกว่าผู้ใช้จะยืนยัน
+            "id": "confirm",
+            "title": "ตรวจและยืนยันทักษะที่ระบบอ่านได้",
+            "done": bool(confirmed) and not pending,
+            "detail": (
+                f"ยืนยันแล้ว {len(confirmed)} ทักษะ"
+                + (f" · เหลือรอตรวจอีก {len(pending)}" if pending else "")
+                if (confirmed or pending) else "ยังไม่มีอะไรให้ตรวจ"
+            ),
+            "href": f"/portfolio/review?id={latest_doc.id}" if latest_doc else "/portfolio",
+        },
+        {
+            "id": "goal",
+            "title": "เลือกอาชีพเป้าหมาย",
+            "done": bool(goal),
+            "detail": target.title_th if target else "ยังไม่ได้เลือก",
+            "href": "/targets",
+        },
+        {
+            "id": "roadmap",
+            "title": "ดูเส้นทางของคุณ",
+            "done": roadmaps > 0,
+            "detail": f"สร้างไว้แล้ว {roadmaps} เส้นทาง" if roadmaps else "ยังไม่ได้สร้าง",
+            "href": "/roadmap",
+        },
+    ]
+
+    nxt = next((s for s in steps if not s["done"]), None)
+    return {
+        "user_id": user.id,
+        "entry": user.entry,
+        "started_at": user.created_at.isoformat(),
+        "steps": steps,
+        # ไม่มี next = เดินครบเส้นแล้ว · หน้าจอต้องไม่ขึ้นปุ่ม "ทำต่อ" ลอย ๆ
+        "next": nxt,
+        "summary": {
+            "documents": len(documents),
+            "pending_skills": len(pending),
+            # 🔒 กติกาข้อ 1 — สองแหล่งนี้แยกกันตั้งแต่ตรงนี้ หน้าจอห้ามบวกรวม
+            "skills_from_cv": len(confirmed),
+            "skills_self_reported": len(self_reported),
+            "quiz_answered": answered,
+            "roadmaps": roadmaps,
+        },
+        "note": (
+            "ระบบไม่มีการสมัครสมาชิก จำคุณได้จากรหัสในเครื่องนี้เท่านั้น "
+            "เก็บรหัสไว้ถ้าอยากกลับมาต่อจากเครื่องอื่น"
+        ),
     }
 
 

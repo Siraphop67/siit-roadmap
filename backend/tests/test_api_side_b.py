@@ -371,6 +371,58 @@ def test_roadmap_list_refuses_an_unknown_user(client):
     assert client.get("/api/roadmaps", params={"user_id": "ไม่มีคนนี้"}).status_code == 404
 
 
+# ═══════════ กลับมาทำต่อ ═══════════
+
+
+def test_resume_points_a_brand_new_user_at_the_first_step(client, user):
+    r = client.get("/api/me/resume", params={"user_id": user}).json()
+    assert r["next"]["id"] == "profile"
+    assert all(not s["done"] for s in r["steps"])
+    assert r["summary"]["skills_from_cv"] == 0
+
+
+def test_resume_moves_forward_as_the_user_actually_progresses(client, with_cv):
+    """ลำดับต้องเดินตามสิ่งที่ผู้ใช้ทำจริง ไม่ใช่ลำดับที่หน้าจอเดา"""
+    user_id, doc_id = with_cv
+    client.post("/api/profile", json={
+        "user_id": user_id, "field": "CPE", "education_level": "ปี 3", "year": 3})
+
+    # ส่งผลงานแล้วแต่ยังไม่ยืนยัน → ต้องพาไปหน้าตรวจ ไม่ใช่ข้ามไปเลือกอาชีพ
+    r = client.get("/api/me/resume", params={"user_id": user_id}).json()
+    assert r["next"]["id"] == "confirm"
+    assert doc_id in r["next"]["href"], "ต้องพากลับไปที่เอกสารฉบับที่ค้างอยู่"
+    assert r["summary"]["pending_skills"] > 0
+
+    d = client.get(f"/api/portfolio/{doc_id}").json()
+    client.post(f"/api/portfolio/{doc_id}/confirm", json={
+        "user_id": user_id, "decisions": {e["id"]: "confirmed" for e in d["extracted"]}})
+
+    r = client.get("/api/me/resume", params={"user_id": user_id}).json()
+    assert r["next"]["id"] == "goal", "ยืนยันครบแล้วต้องไปขั้นถัดไป"
+    assert r["summary"]["pending_skills"] == 0
+    assert r["summary"]["skills_from_cv"] > 0
+
+
+def test_resume_has_nothing_left_when_the_walk_is_done(client, ready):
+    client.get("/api/roadmap", params={"user_id": ready})
+    r = client.get("/api/me/resume", params={"user_id": ready}).json()
+    assert all(s["done"] for s in r["steps"]), [s["id"] for s in r["steps"] if not s["done"]]
+    assert r["next"] is None, "เดินครบแล้วต้องไม่มีปุ่ม 'ทำต่อ' ลอย ๆ"
+
+
+def test_resume_keeps_the_two_kinds_of_skills_apart(client, ready):
+    """🔒 กติกาข้อ 1 — สรุปหน้าโปรไฟล์ก็ห้ามบวกรวมสองแหล่ง"""
+    r = client.get("/api/me/resume", params={"user_id": ready}).json()
+    assert "skills_from_cv" in r["summary"] and "skills_self_reported" in r["summary"]
+    assert "skills" not in r["summary"]
+
+
+def test_resume_refuses_an_unknown_code(client):
+    """รหัสที่ใช้กู้คืนต้องตอบชัดว่าใช้ไม่ได้ ไม่ใช่คืนหน้าเปล่า"""
+    r = client.get("/api/me/resume", params={"user_id": "รหัสมั่ว"})
+    assert r.status_code == 404
+
+
 # ═══════════ PDPA ═══════════
 
 

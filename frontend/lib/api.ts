@@ -666,6 +666,40 @@ export function submissionErrors(e: unknown): SubmissionErrors | null {
     : null;
 }
 
+// ══════════════════════ กลับมาทำต่อ ══════════════════════
+
+/**
+ * ขั้นตอนหนึ่งขั้นบนเส้นทาง — ลำดับมาจาก API ห้ามเรียงใหม่หรือข้ามเอง
+ * ลำดับนี้คือกติกาของระบบ (ยืนยันทักษะก่อนถึงนับ · มีเป้าหมายก่อนถึงมี roadmap)
+ */
+export type ResumeStep = {
+  id: "profile" | "portfolio" | "confirm" | "goal" | "roadmap";
+  title: string;
+  done: boolean;
+  /** ประโยคพร้อมขึ้นจอว่าขั้นนี้มีอะไรอยู่แล้วบ้าง */
+  detail: string;
+  href: string;
+};
+
+export type ResumeState = {
+  user_id: string;
+  entry: "known" | "unsure";
+  started_at: string;
+  steps: ResumeStep[];
+  /** null = เดินครบเส้นแล้ว · ห้ามขึ้นปุ่ม "ทำต่อ" ตอนเป็น null */
+  next: ResumeStep | null;
+  summary: {
+    documents: number;
+    pending_skills: number;
+    /** 🔒 กติกาข้อ 1 — สองตัวนี้ห้ามบวกรวมกันบนหน้าจอ */
+    skills_from_cv: number;
+    skills_self_reported: number;
+    quiz_answered: number;
+    roadmaps: number;
+  };
+  note: string;
+};
+
 // ══════════════════════ ข้อมูลของฉัน ══════════════════════
 
 export type SkillLine = { skill_id: string; name_th: string; level: number };
@@ -901,6 +935,10 @@ export const api = {
 
   skill: (skillId: string, userId?: string | null) =>
     call<SkillDetail>(`/skills/${encodeURIComponent(skillId)}${q({ user_id: userId })}`),
+
+  // ── กลับมาทำต่อ ──
+  /** "ครั้งก่อนค้างไว้ตรงไหน" · รหัสที่ใช้ไม่ได้จะได้ ApiError 404 — เอาไว้ตรวจรหัสกู้คืน */
+  resume: (userId: string) => call<ResumeState>(`/me/resume${q({ user_id: userId })}`),
 
   // ── ข้อมูลของฉัน + PDPA ──
   me: (userId: string) => call<MeResponse>(`/me${q({ user_id: userId })}`),

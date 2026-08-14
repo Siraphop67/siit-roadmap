@@ -102,7 +102,7 @@ export function DiscoverNav({ active = "Pathfinding" }: { active?: string }) {
   );
 }
 
-type WorkspaceActive = "workspace" | "quiz" | "portfolio" | "targets" | "roadmap" | "skills";
+type WorkspaceActive = "workspace" | "quiz" | "portfolio" | "targets" | "roadmap" | "skills" | "profile";
 
 export function WorkspaceSidebar({ active, variant = "helpful" }: { active: WorkspaceActive; variant?: "helpful" | "graph" }) {
   const links: { id: WorkspaceActive; label: string; icon: string; href: string }[] = variant === "graph"
@@ -112,6 +112,7 @@ export function WorkspaceSidebar({ active, variant = "helpful" }: { active: Work
         { id: "roadmap", label: "Roadmaps", icon: "route", href: "/roadmap" },
         { id: "targets", label: "Career Library", icon: "menu_book", href: "/targets" },
         { id: "portfolio", label: "Skill Extraction", icon: "psychology_alt", href: "/portfolio" },
+        { id: "profile", label: "โปรไฟล์ของฉัน", icon: "person", href: "/profile" },
       ]
     : [
         { id: "workspace", label: "Dashboard", icon: "dashboard", href: "/" },
@@ -119,6 +120,7 @@ export function WorkspaceSidebar({ active, variant = "helpful" }: { active: Work
         { id: "portfolio", label: "Skill Extraction", icon: "psychology_alt", href: "/portfolio" },
         { id: "targets", label: "Career Library", icon: "menu_book", href: "/targets" },
         { id: "roadmap", label: "My Roadmap", icon: "route", href: "/roadmap" },
+        { id: "profile", label: "โปรไฟล์ของฉัน", icon: "person", href: "/profile" },
       ];
   return (
     <aside className="hidden lg:flex flex-col h-screen sticky top-0 p-stack-md bg-surface-muted border-r border-border-low w-64 z-40 shrink-0">
@@ -146,7 +148,7 @@ export function MobileWorkspaceNav({ active }: { active: WorkspaceActive }) {
     ["skills", "hub", "Skills", "/skills"],
     ["roadmap", "route", "Roadmap", "/roadmap"],
     ["targets", "menu_book", "Library", "/targets"],
-    ["portfolio", "person", "Profile", "/portfolio"],
+    ["profile", "person", "Profile", "/profile"],
   ];
   return (
     <nav className="fixed bottom-0 w-full z-50 lg:hidden rounded-t-xl border-t border-border-low bg-surface-bg shadow-lg no-print">

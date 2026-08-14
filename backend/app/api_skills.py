@@ -16,12 +16,17 @@
    (เช่น "SW-TEST") ทุก node ติดป้าย `name_en_is_placeholder` มาด้วย และสรุปจำนวนไว้ที่
    `notes.labels` — ห้ามให้หน้าจอเอา id ขึ้นเป็นชื่อ node เงียบ ๆ
 
-🔴 ไม่มีตัวกรองฝั่ง server โดยตั้งใจ
-   73 node เล็กพอจะกรองบนหน้าจอ · ถ้ากรองที่นี่ เส้นที่ปลายข้างหนึ่งถูกกรองออกจะหายไปด้วย
-   แล้วกราฟที่ผู้ใช้เห็นจะไม่ใช่กราฟจริง — คืนทั้งใบแล้วให้หน้าจอซ่อนเอาชัดเจนกว่า
+🔴 การกรองอยู่คนละชั้นกัน อย่าสลับกัน
+   · กรองตาม *หมวด* เป็นเรื่องของหน้าจอ — 73 node เล็กพอจะซ่อนเอาเอง และถ้ากรองที่นี่
+     เส้นที่ปลายข้างหนึ่งถูกกรองออกจะหายไปด้วย กราฟที่เห็นก็จะไม่ใช่กราฟจริง
+   · `scope=mine` เป็นเรื่องของ server — เพราะมันไม่ใช่การซ่อน แต่เป็นการเดินกราฟจาก
+     ทักษะที่ผู้ใช้มี แล้วตอบว่าอะไรคือ "ยังขาดก่อนหน้า" กับ "ไปต่อได้" ซึ่งเป็นกติกา
+     ที่อยู่ฝั่งนี้อยู่แล้ว หน้าจอไม่ควรต้องเขียนซ้ำแล้วเดาให้ตรงกันเอง
 """
 
 from __future__ import annotations
+
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -59,6 +64,14 @@ CATEGORY_TH = {
     "industrial": "อุตสาหการ",
     "mechanical": "เครื่องกล",
     "professional": "ทักษะวิชาชีพ",
+}
+
+# ทักษะตัวนี้เกี่ยวกับผู้ใช้ยังไง — ใช้ทั้งลงสีบนกราฟและทำคำอธิบาย
+RELATION_TH = {
+    "have": "คุณมีแล้ว",
+    "prereq_missing": "ยังขาด — ต้องมีก่อนถึงจะต่อยอดสิ่งที่คุณมีได้",
+    "next": "ไปต่อได้ทันทีจากสิ่งที่คุณมี",
+    "other": "ยังไม่เกี่ยวกับทักษะที่คุณมีตอนนี้",
 }
 
 SOURCE_TH = {
@@ -132,12 +145,43 @@ def _brief(s: Skill) -> dict:
 # ═════════════════════ กราฟทั้งใบ ═════════════════════
 
 
+def _relations(graph: SkillGraph, have: set[str]) -> dict[str, str]:
+    """ทักษะแต่ละตัวเกี่ยวอะไรกับสิ่งที่ผู้ใช้มี
+
+    🔴 ตัวที่เป็นทั้ง "ยังขาดก่อนหน้า" และ "ไปต่อได้" ให้นับเป็น prereq_missing
+       เพราะมันขวางอยู่ — บอกว่า "ไปต่อได้" ทั้งที่ยังติดของก่อนหน้าคือให้ข้อมูลผิด
+    """
+    if not have:
+        return {}
+    prereq_missing: set[str] = set()
+    nxt: set[str] = set()
+    for skill_id in have:
+        prereq_missing |= {p for p in graph.prereqs(skill_id) if p not in have}
+        nxt |= {u for u in graph.unlocks(skill_id) if u not in have}
+    nxt -= prereq_missing
+    return (
+        {s: "have" for s in have}
+        | {s: "prereq_missing" for s in prereq_missing}
+        | {s: "next" for s in nxt}
+    )
+
+
 @router.get("")
-def list_skills(user_id: str | None = None, db: Session = Depends(get_db)) -> dict:
+def list_skills(
+    user_id: str | None = None,
+    scope: Literal["all", "mine"] = "all",
+    db: Session = Depends(get_db),
+) -> dict:
     """★ หน้า Skill Graph
 
     ส่ง node + edge ดิบ ๆ ไม่มีพิกัด — การวางตำแหน่งเป็นเรื่องของหน้าจอ
     ที่นี่บอกได้แค่ว่าอะไรต่อกับอะไร และอะไรเป็นรากของกราฟ (`prereq_count == 0`)
+
+    `scope=mine` — เฉพาะทักษะของผู้ใช้ + ตัวที่ติดกับมันหนึ่งก้าว
+      กราฟ 73 ตัวคือ "กราฟของระบบ" ไม่ใช่ "กราฟของคุณ" · คนที่มี 6 ทักษะไม่ควรต้อง
+      หาตัวเองใน 73 กล่อง · แต่ถ้าตัดเหลือแค่ 6 ตัวก็จะไม่เหลือเส้นให้ดู เพราะทักษะ
+      ที่คนหนึ่งมีมักไม่ได้ต่อกันเอง → จึงเอาเพื่อนบ้านหนึ่งก้าวมาด้วย ทั้งฝั่งที่ยังขาด
+      และฝั่งที่ไปต่อได้ เส้นเลยกลับมามีความหมายว่า "จากตรงนี้ไปไหนได้"
     """
     skills = _skills(db)
     graph = _graph(db, skills)
@@ -150,9 +194,16 @@ def list_skills(user_id: str | None = None, db: Session = Depends(get_db)) -> di
         _user(db, user_id)
         cv = _cv_levels(db, user_id)
         self_reported = _self_levels(db, user_id)
+    elif scope == "mine":
+        raise HTTPException(400, "ดูกราฟของตัวเองต้องส่ง user_id มาด้วย")
+
+    relations = _relations(graph, set(cv) | set(self_reported))
 
     nodes = []
     for s in skills:
+        relation = relations.get(s.id, "other")
+        if scope == "mine" and relation == "other":
+            continue
         nodes.append({
             **_brief(s),
             "source": s.source,
@@ -166,27 +217,42 @@ def list_skills(user_id: str | None = None, db: Session = Depends(get_db)) -> di
             # 🔒 กติกาข้อ 1 — สองฟิลด์ ไม่ใช่ฟิลด์เดียว · null = ยังไม่มีหลักฐานทางนั้น
             "level_from_cv": cv.get(s.id),
             "level_self_reported": self_reported.get(s.id),
+            # ไม่ส่ง user_id มา = ทุกตัวเป็น other · ไม่ได้แปลว่าผู้ใช้ไม่มีอะไรเลย
+            "relation": relation,
+            "relation_th": RELATION_TH[relation],
         })
 
+    kept = {n["id"] for n in nodes}
+    edges = [(a, b) for a, b in graph.edges if a in kept and b in kept]
+
     counts: dict[str, int] = {}
-    for s in skills:
-        counts[s.category] = counts.get(s.category, 0) + 1
+    for n in nodes:
+        counts[n["category"]] = counts.get(n["category"], 0) + 1
 
     placeholder = sum(1 for n in nodes if n["name_en_is_placeholder"])
     return {
+        "scope": scope,
         "nodes": nodes,
-        "edges": [
-            {"from": a, "to": b, "reviewed_by_human": True} for a, b in graph.edges
-        ],
+        "edges": [{"from": a, "to": b, "reviewed_by_human": True} for a, b in edges],
         "categories": [
             {"id": cid, "label_th": CATEGORY_TH.get(cid, cid), "count": n}
             for cid, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
         ],
         "counts": {
             "skills": len(nodes),
-            "edges": len(graph.edges),
+            "edges": len(edges),
             "roots": sum(1 for n in nodes if n["prereq_count"] == 0),
+            # นับตามความสัมพันธ์ — หน้าจอเอาไปทำคำโปรยได้โดยไม่ต้องไล่นับเอง
+            "have": sum(1 for n in nodes if n["relation"] == "have"),
+            "prereq_missing": sum(1 for n in nodes if n["relation"] == "prereq_missing"),
+            "next": sum(1 for n in nodes if n["relation"] == "next"),
         },
+        # 🔒 ว่างเปล่าเงียบ ๆ ไม่ได้ — ต้องบอกว่าทำไมว่าง และให้ไปทำอะไรต่อ
+        "empty_message": (
+            "ยังไม่มีทักษะที่ยืนยันแล้วสักตัว — ส่ง CV หรือผลงานเข้ามาก่อน "
+            "แล้วกราฟนี้จะขึ้นเฉพาะทักษะของคุณและทางที่ไปต่อได้"
+            if scope == "mine" and not nodes else ""
+        ),
         "you": (
             {"from_cv": len(cv), "self_reported": len(self_reported)}
             if user_id else None

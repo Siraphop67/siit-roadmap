@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ensureSession, session, type ActivityAnswer, type DiscoverNext } from "@/lib/api";
 import { Icon, InlineNotice } from "@/components/student-ui";
@@ -15,7 +15,7 @@ const buildChoices: Record<ActivityAnswer, { title: string; sub: string; icon: s
 
 const missionNames = ["SPARK", "INSTINCT", "PLAYSTYLE", "YOUR BUILD"];
 
-export default function DiscoverPage() {
+function DiscoverPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<DiscoverNext | null>(null);
@@ -72,4 +72,12 @@ export default function DiscoverPage() {
       </section>}
     </main>
   </div>;
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#061323]" />}>
+      <DiscoverPageContent />
+    </Suspense>
+  );
 }

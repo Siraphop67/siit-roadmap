@@ -167,6 +167,20 @@ export type ProfileView = {
 
 export type DocumentKind = "pdf" | "text" | "github" | "linkedin";
 
+export type GithubRepo = {
+  name: string;
+  description: string;
+  language: string;
+  updated_at: string;
+};
+
+export type GithubRepoList = {
+  owner: string;
+  repos: GithubRepo[];
+  /** เหตุผลที่คลังโค้ดส่วนตัวไม่แสดง — ต้องขึ้นหน้าจอเสมอ ไม่ใช่ซ่อนไว้ */
+  note: string;
+};
+
 export type IngestResult = {
   document_id: string;
   kind: DocumentKind;
@@ -850,8 +864,21 @@ export const api = {
   portfolioText: (body: { user_id: string; text: string; consent: boolean }) =>
     json<IngestResult>("/portfolio/text", "POST", body),
 
-  portfolioGithub: (body: { user_id: string; url: string; consent: boolean }) =>
-    json<IngestResult>("/portfolio/github", "POST", body),
+  /** รายชื่อคลังโค้ดสาธารณะให้ผู้ใช้เลือกเองก่อนว่าจะให้อ่านอันไหน
+   *
+   * ขั้นนี้ยังไม่อ่านผลงานและไม่เก็บอะไร จึงไม่ต้องส่งความยินยอมมา
+   * ความยินยอมไปขอตอน portfolioGithub ซึ่งเป็นตอนที่อ่านเนื้อหาจริง
+   */
+  portfolioGithubList: (body: { url: string }) =>
+    json<GithubRepoList>("/portfolio/github/list", "POST", body),
+
+  /** `repos` ไม่ส่ง = ให้ระบบเลือกให้เหมือนเดิม · ส่งมาแล้วต้องมีอย่างน้อยหนึ่งรายการ */
+  portfolioGithub: (body: {
+    user_id: string;
+    url: string;
+    consent: boolean;
+    repos?: string[];
+  }) => json<IngestResult>("/portfolio/github", "POST", body),
 
   /** LinkedIn ดึงอัตโนมัติไม่ได้ (ผิด ToS) — ผู้ใช้ต้องวาง `text` มาเอง */
   portfolioLinkedin: (body: {

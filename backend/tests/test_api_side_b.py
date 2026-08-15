@@ -65,6 +65,26 @@ def test_health_reports_what_actually_loaded(client):
     assert h["extractor_is_real_llm"] is False, "ยังไม่มี LLM key — ต้องรายงานตามจริง"
 
 
+def test_character_build_and_quest_progress_are_separate_from_skill_evidence(client, user):
+    build = client.put("/api/character-build", json={
+        "user_id": user, "archetype": "builder", "playstyle": "create",
+        "intensity": "steady", "completed_missions": 4,
+    })
+    assert build.status_code == 200
+    assert client.get("/api/character-build", params={"user_id": user}).json()["build"]["archetype"] == "builder"
+
+    started = client.post("/api/quests/C-PY-INTRO/start", json={"user_id": user})
+    assert started.status_code == 200 and started.json()["status"] == "started"
+    completed = client.post("/api/quests/C-PY-INTRO/complete", json={"user_id": user})
+    assert completed.status_code == 200 and completed.json()["status"] == "completed"
+    assert completed.json()["unlocked_preview"]
+
+    progress = client.get("/api/quests", params={"user_id": user}).json()
+    assert progress["counts"] == {"started": 1, "completed": 1}
+    assert {b["id"] for b in progress["badges"]} >= {"first-quest", "quest-finisher"}
+    assert client.get("/api/resources/C-PY-INTRO", params={"user_id": user}).json()["quest"]["status"] == "completed"
+
+
 def test_meta_states_plainly_what_is_not_real_yet(client):
     m = client.get("/api/meta").json()
     assert len(m["fields"]) == 7

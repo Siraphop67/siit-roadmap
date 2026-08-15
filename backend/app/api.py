@@ -40,6 +40,7 @@ from app.llm.anthropic import ExtractorError
 from app.models import (
     ActivityResponse,
     CareerTarget,
+    CharacterBuild,
     Consent,
     ExtractedSkill,
     InterestResponse,
@@ -48,6 +49,7 @@ from app.models import (
     LearningResource,
     PersonalityResult,
     ResourceSkill,
+    QuestProgress,
     Roadmap,
     RoadmapStep,
     SelfReportedSkill,
@@ -144,6 +146,22 @@ def _resource_learning_flow(resource: LearningResource) -> list[dict]:
             "est_hours": prove,
         },
     ]
+
+
+def _badges(db: Session, user_id: str) -> list[dict]:
+    """Badge เป็น feedback ของการลงมือทำ ไม่ใช่คะแนนหรือการรับรองความสามารถ."""
+    quests = list(db.scalars(select(QuestProgress).where(QuestProgress.user_id == user_id)).all())
+    completed = sum(q.status == "completed" for q in quests)
+    badges = []
+    if quests:
+        badges.append({"id": "first-quest", "label": "First Quest", "description": "เริ่มลงมือทำ quest แรกแล้ว"})
+    if completed:
+        badges.append({"id": "quest-finisher", "label": "Quest Finisher", "description": "ทำ quest สำเร็จอย่างน้อย 1 อัน"})
+    if completed >= 3:
+        badges.append({"id": "trailblazer", "label": "Trailblazer", "description": "ทำ quest สำเร็จครบ 3 อัน"})
+    if db.scalar(select(UserGoal).where(UserGoal.user_id == user_id, UserGoal.is_primary.is_(True))):
+        badges.append({"id": "pathfinder", "label": "Pathfinder", "description": "เลือกเส้นทางอาชีพของตัวเองแล้ว"})
+    return badges
 
 
 def _requirements(db: Session, target_id: str) -> list[Requirement]:
@@ -580,6 +598,95 @@ def confirm_extraction(
 # ═════════════════════ เป้าหมาย + ROADMAP ═════════════════════
 
 
+class CharacterBuildRequest(BaseModel):
+    user_id: str
+    archetype: Literal["builder", "analyst", "maker", "optimizer"]
+    playstyle: Literal["explore", "solve", "create", "improve"]
+    intensity: Literal["light", "steady", "challenge"] = "steady"
+    completed_missions: int = Field(default=4, ge=0, le=8)
+
+
+@router.put("/character-build")
+def save_character_build(body: CharacterBuildRequest, db: Session = Depends(get_db)) -> dict:
+    """บันทึก build ที่เลือกไว้สำหรับ UI เท่านั้น; ไม่ปนกับหลักฐานจาก CV หรือ skill level."""
+    _user(db, body.user_id)
+    build = db.scalar(select(CharacterBuild).where(CharacterBuild.user_id == body.user_id))
+    if not build:
+        build = CharacterBuild(user_id=body.user_id, archetype=body.archetype,
+                               playstyle=body.playstyle, intensity=body.intensity,
+                               completed_missions=body.completed_missions)
+        db.add(build)
+    else:
+        build.archetype, build.playstyle, build.intensity = body.archetype, body.playstyle, body.intensity
+        build.completed_missions = body.completed_missions
+    db.commit()
+    return {"archetype": build.archetype, "playstyle": build.playstyle,
+            "intensity": build.intensity, "completed_missions": build.completed_missions}
+
+
+@router.get("/character-build")
+def get_character_build(user_id: str, db: Session = Depends(get_db)) -> dict:
+    _user(db, user_id)
+    build = db.scalar(select(CharacterBuild).where(CharacterBuild.user_id == user_id))
+    return {"build": None if not build else {
+        "archetype": build.archetype, "playstyle": build.playstyle,
+        "intensity": build.intensity, "completed_missions": build.completed_missions,
+    }}
+
+
+class QuestAction(BaseModel):
+    user_id: str
+
+
+@router.get("/quests")
+def list_quests(user_id: str, db: Session = Depends(get_db)) -> dict:
+    _user(db, user_id)
+    rows = list(db.scalars(select(QuestProgress).where(QuestProgress.user_id == user_id)).all())
+    resources = {r.id: r for r in db.scalars(select(LearningResource).where(
+        LearningResource.id.in_([q.resource_id for q in rows]) if rows else False)).all()}
+    return {
+        "quests": [{"resource_id": q.resource_id, "status": q.status,
+                    "title": resources[q.resource_id].title if q.resource_id in resources else q.resource_id,
+                    "started_at": q.started_at.isoformat(),
+                    "completed_at": q.completed_at.isoformat() if q.completed_at else None} for q in rows],
+        "counts": {"started": len(rows), "completed": sum(q.status == "completed" for q in rows)},
+        "badges": _badges(db, user_id),
+    }
+
+
+@router.post("/quests/{resource_id}/start")
+def start_quest(resource_id: str, body: QuestAction, db: Session = Depends(get_db)) -> dict:
+    _user(db, body.user_id)
+    if not db.get(LearningResource, resource_id):
+        raise HTTPException(404, "ไม่พบ quest นี้")
+    quest = db.scalar(select(QuestProgress).where(
+        QuestProgress.user_id == body.user_id, QuestProgress.resource_id == resource_id))
+    if not quest:
+        quest = QuestProgress(user_id=body.user_id, resource_id=resource_id, status="started")
+        db.add(quest)
+        db.commit()
+    return {"resource_id": resource_id, "status": quest.status, "badges": _badges(db, body.user_id)}
+
+
+@router.post("/quests/{resource_id}/complete")
+def complete_quest(resource_id: str, body: QuestAction, db: Session = Depends(get_db)) -> dict:
+    _user(db, body.user_id)
+    resource = db.get(LearningResource, resource_id)
+    if not resource:
+        raise HTTPException(404, "ไม่พบ quest นี้")
+    quest = db.scalar(select(QuestProgress).where(
+        QuestProgress.user_id == body.user_id, QuestProgress.resource_id == resource_id))
+    if not quest:
+        quest = QuestProgress(user_id=body.user_id, resource_id=resource_id, status="started")
+        db.add(quest)
+    quest.status, quest.completed_at = "completed", datetime.now(timezone.utc)
+    db.commit()
+    taught = list(db.scalars(select(ResourceSkill).where(ResourceSkill.resource_id == resource_id)).all())
+    return {"resource_id": resource_id, "status": "completed", "badges": _badges(db, body.user_id),
+            "unlocked_preview": [{"skill_id": t.skill_id, "reaches_level": t.reaches_level} for t in taught],
+            "note": "Quest ที่ทำเสร็จเป็นความคืบหน้า ไม่ได้เพิ่มระดับทักษะอัตโนมัติ — เพิ่มหลักฐานผลงานเพื่อยืนยันได้"}
+
+
 class GoalRequest(BaseModel):
     user_id: str
     target_id: str
@@ -624,9 +731,13 @@ def get_resource(
         raise HTTPException(404, "ไม่พบคอร์สหรือกิจกรรมนี้")
 
     current: dict[str, int] = {}
+    quest_status: str | None = None
     if user_id:
         _user(db, user_id)
         current = merge_evidence(_confirmed_skills(db, user_id), _self_reported(db, user_id))
+        progress = db.scalar(select(QuestProgress).where(
+            QuestProgress.user_id == user_id, QuestProgress.resource_id == resource_id))
+        quest_status = progress.status if progress else None
 
     target: CareerTarget | None = None
     roadmap_steps: dict[str, object] = {}
@@ -685,6 +796,8 @@ def get_resource(
         "min_year": resource.min_year,
         "proof_of_done": resource.proof_of_done,
         "data_status": resource.data_status,
+        "quest": {"status": quest_status, "can_start": quest_status is None,
+                  "can_complete": quest_status == "started"} if user_id else None,
         "teaches": teaches,
         "roadmap_context": (
             {"target_id": target.id, "title_th": target.title_th, "title_en": target.title_en}
@@ -1017,7 +1130,7 @@ def delete_everything(user_id: str, db: Session = Depends(get_db)) -> dict:
     _user(db, user_id)
     counts: dict[str, int] = {}
     for model in (ExtractedSkill, UserDocument, SelfReportedSkill, ActivityResponse,
-                  InterestResponse, PersonalityResult, TargetMatch, UserGoal,
+                  InterestResponse, PersonalityResult, CharacterBuild, QuestProgress, TargetMatch, UserGoal,
                   LearnerProfile, Consent):
         result = db.execute(delete(model).where(model.user_id == user_id))
         counts[model.__tablename__] = result.rowcount or 0

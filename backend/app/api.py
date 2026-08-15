@@ -34,7 +34,15 @@ from app.engine.roadmap import (
     merge_evidence,
 )
 from app.engine.skill_graph import SkillGraph
-from app.ingest import IngestError, from_github, from_linkedin, from_pdf, from_text
+from app.ingest import (
+    IngestError,
+    from_github,
+    from_linkedin,
+    from_pdf,
+    from_text,
+    list_github_repos,
+    parse_github,
+)
 from app.llm import get_extractor
 from app.llm.anthropic import ExtractorError
 from app.models import (
@@ -499,6 +507,14 @@ class LinkPortfolio(BaseModel):
     url: str
     text: str | None = None
     consent: bool = False
+    #: repo ที่ผู้ใช้ติ๊กเลือกเอง (เฉพาะทาง GitHub)
+    #: 🔴 None = ไม่ได้ส่งมา → พฤติกรรมเดิม · [] = เลือกศูนย์อัน → ปฏิเสธ
+    #:    สองอย่างนี้ต่างกัน ห้ามยุบรวม ไม่งั้นระบบจะอ่านทุก repo ทั้งที่ผู้ใช้ไม่ได้เลือก
+    repos: list[str] | None = None
+
+
+class RepoListRequest(BaseModel):
+    url: str
 
 
 @router.post("/portfolio/text")
@@ -510,11 +526,32 @@ def portfolio_text(body: TextPortfolio, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(400, str(exc)) from exc
 
 
+@router.post("/portfolio/github/list")
+def portfolio_github_list(body: RepoListRequest) -> dict:
+    """รายชื่อ repo สาธารณะให้ผู้ใช้ติ๊กเลือกเองก่อนว่าจะให้อ่านอันไหน
+
+    🔓 ขั้นนี้ไม่แตะฐานข้อมูลและไม่ขอความยินยอม — ยังไม่ได้อ่านผลงานของใคร
+       ความยินยอมไปขอตอน POST /portfolio/github ซึ่งเป็นตอนที่อ่านเนื้อหาจริง
+    """
+    try:
+        repos = list_github_repos(body.url)
+    except IngestError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {
+        "owner": parse_github(body.url)[0],
+        "repos": repos,
+        # 🔒 กติกาข้อ 5 — ห้ามให้ผู้ใช้เข้าใจว่านี่คือผลงานทั้งหมดที่เขามี
+        "note": ("เห็นเฉพาะ repo สาธารณะ · repo ส่วนตัวไม่แสดงที่นี่ "
+                 "หากต้องการให้อ่าน ให้คัดลอกข้อความมาวางแทน"),
+    }
+
+
 @router.post("/portfolio/github")
 def portfolio_github(body: LinkPortfolio, db: Session = Depends(get_db)) -> dict:
     _user(db, body.user_id)
     try:
-        return _store_document(db, body.user_id, from_github(body.url), body.consent)
+        return _store_document(
+            db, body.user_id, from_github(body.url, repos=body.repos), body.consent)
     except IngestError as exc:
         raise HTTPException(400, str(exc)) from exc
 

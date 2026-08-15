@@ -36,7 +36,7 @@ export default function ReviewPage() {
       sessionStorage.setItem(TOKEN_KEY, t);
     } catch (e) {
       setQueue(null);
-      setFailed(e instanceof Error ? e.message : "เปิดคิวไม่สำเร็จ");
+      setFailed(e instanceof Error ? e.message : "ไม่สามารถเปิดรายการรอตรวจสอบได้");
     }
   }, []);
 
@@ -58,14 +58,14 @@ export default function ReviewPage() {
   async function decide(id: string, decision: "approved" | "rejected") {
     const note =
       decision === "rejected"
-        ? window.prompt("เหตุผลที่ไม่อนุมัติ (บริษัทจะเห็นข้อความนี้)") ?? ""
+        ? window.prompt("เหตุผลที่ไม่อนุมัติ (องค์กรจะเห็นข้อความนี้)") ?? ""
         : "";
     setBusy(id);
     try {
       await api.reviewPosting(token, id, { decision, note: note || undefined });
       await load(token, status);
     } catch (e) {
-      setFailed(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ");
+      setFailed(e instanceof Error ? e.message : "ไม่สามารถบันทึกผลการตรวจสอบได้");
     } finally {
       setBusy("");
     }
@@ -73,7 +73,7 @@ export default function ReviewPage() {
 
   if (!queue) {
     return (
-      <Page title="ตรวจประกาศจากบริษัท" lede="เฉพาะคนในทีม">
+      <Page title="ตรวจสอบประกาศจากองค์กร" lede="สำหรับทีมงานเท่านั้น">
         <div className="max-w-md space-y-4">
           {failed && <Note tone="warn">{failed}</Note>}
           <input
@@ -87,7 +87,7 @@ export default function ReviewPage() {
             onClick={open}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-[0.95rem] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
           >
-            เปิดคิว
+            เปิดรายการรอตรวจสอบ
           </button>
           <p className="text-[0.85rem] text-zinc-500">
             ตั้งค่า <code>EMPLOYER_REVIEW_TOKEN</code> ใน <code>backend/.env</code>
@@ -98,7 +98,7 @@ export default function ReviewPage() {
   }
 
   return (
-    <Page title="ตรวจประกาศจากบริษัท" lede={`${queue.count} อันในสถานะนี้`}>
+    <Page title="ตรวจสอบประกาศจากองค์กร" lede={`${queue.count} ฉบับในสถานะนี้`}>
       <div className="space-y-6">
         <div className="flex flex-wrap gap-2">
           {(["pending", "approved", "rejected"] as const).map((s) => (
@@ -112,7 +112,7 @@ export default function ReviewPage() {
                   : "border border-zinc-300 dark:border-zinc-700")
               }
             >
-              {{ pending: "รอตรวจ", approved: "ผ่านแล้ว", rejected: "ไม่ผ่าน" }[s]}
+              {{ pending: "รอการตรวจสอบ", approved: "อนุมัติแล้ว", rejected: "ไม่อนุมัติ" }[s]}
             </button>
           ))}
         </div>
@@ -147,7 +147,7 @@ export default function ReviewPage() {
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">ผู้กรอก · ติดต่อ</dt>
+                <dt className="text-zinc-500">ผู้กรอกข้อมูล · ช่องทางติดต่อ</dt>
                 <dd className="break-all">
                   {p.submitted_by}
                   {p.contact_email ? ` · ${p.contact_email}` : ""}
@@ -195,7 +195,7 @@ export default function ReviewPage() {
         {status === "approved" && queue.count > 0 && (
           <Note tone="info" title="อนุมัติแล้วยังไม่พอ">
             ต้องรัน <code>make postings</code> แล้ว <code>make backend</code> อีกครั้ง
-            ประกาศพวกนี้ถึงจะมีผลกับ requirement ที่นักศึกษาเห็น
+            ประกาศเหล่านี้จึงจะมีผลต่อเงื่อนไขที่นักศึกษาเห็น
           </Note>
         )}
       </div>

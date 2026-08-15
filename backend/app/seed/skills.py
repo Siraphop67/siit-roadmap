@@ -49,7 +49,7 @@ _S = [
     ("SW-WEB", "สร้างเว็บที่ดึงข้อมูลจาก API มาแสดงและใช้งานได้จริง", "software", "tool-javascript", "onet"),
     ("SW-CLOUD", "นำระบบขึ้นคลาวด์และดูแลให้ทำงานต่อเนื่อง", "software", "tool-amazon-web-services-aws-software", "onet"),
     ("SW-CONTAINER", "ห่อระบบด้วยคอนเทนเนอร์ให้รันที่ไหนก็ได้ผลเหมือนกัน", "software", "tool-docker", "onet"),
-    ("DA-CLEAN", "เก็บและทำความสะอาดชุดข้อมูลจนพร้อมใช้", "data", None, "market"),
+    ("DA-CLEAN", "ล้างและจัดข้อมูลให้พร้อมใช้", "data", None, "market"),
     ("DA-ML", "ฝึกโมเดล machine learning กับข้อมูลจริงและวัดว่าดีแค่ไหน", "data", "tool-tensorflow", "onet"),
     ("DA-DEPLOY", "นำโมเดลขึ้นใช้งานจริงแล้ววัดผลหลังใช้", "data", "tool-pytorch", "onet"),
     ("DA-PIPE", "ทำท่อข้อมูลที่เดินเองทุกวันโดยไม่มีคนมากด", "data", None, "market"),
@@ -58,7 +58,7 @@ _S = [
     ("EMB-IOT", "ต่ออุปกรณ์วัดให้ส่งข้อมูลขึ้นระบบได้ต่อเนื่อง", "embedded", None, "market"),
 
     # ══════════ โยธา ══════════
-    ("CE-STATIC", "วิเคราะห์แรงในโครงสร้างด้วยสมดุลสถิต", "civil", None, "manual"),
+    ("CE-STATIC", "คำนวณแรงในโครงสร้างให้ปลอดภัย", "civil", None, "manual"),
     ("CE-MATERIAL", "ทดสอบสมบัติวัสดุก่อสร้างและรายงานผลการทดสอบ", "civil", "onet-quality-control-analysis", "onet"),
     ("CE-RC", "ออกแบบคานและเสาคอนกรีตเสริมเหล็ก", "civil", None, "manual"),
     ("CE-SURVEY", "สำรวจและทำระดับพื้นที่ด้วยกล้องระดับ", "civil", None, "manual"),
@@ -67,10 +67,10 @@ _S = [
     ("CE-FEM", "วิเคราะห์พฤติกรรมโครงสร้างด้วยซอฟต์แวร์", "civil", "tool-finite-element-analysis-fea-software", "onet"),
 
     # ══════════ เคมี ══════════
-    ("CH-MASS", "ทำสมดุลมวลของกระบวนการจนบอกได้ว่าของหายไปไหน", "chemical", None, "manual"),
-    ("CH-ENERGY", "ทำสมดุลพลังงานและใช้อุณหพลศาสตร์กับกระบวนการจริง", "chemical", None, "manual"),
+    ("CH-MASS", "คำนวณวัตถุดิบเข้า–ออกในกระบวนการผลิต", "chemical", None, "manual"),
+    ("CH-ENERGY", "คำนวณพลังงานที่ใช้ในกระบวนการผลิต", "chemical", None, "manual"),
     ("CH-LAB", "ทำการทดลองในห้องปฏิบัติการอย่างปลอดภัยและทำซ้ำได้", "chemical", "onet-chemistry", "onet"),
-    ("CH-PFD", "อ่านและเขียนแผนภาพกระบวนการผลิต", "chemical", None, "manual"),
+    ("CH-PFD", "อ่านและวาดแผนภาพกระบวนการผลิต (P&ID)", "chemical", None, "manual"),
     ("CH-KIN", "หาอัตราการเกิดปฏิกิริยาจากข้อมูลการทดลอง", "chemical", "onet-science", "onet"),
     ("CH-SIM", "จำลองกระบวนการผลิตด้วยซอฟต์แวร์", "chemical", None, "market"),
     ("CH-SAFE", "ประเมินอันตรายของกระบวนการและออกมาตรการรองรับ", "chemical", "onet-production-and-processing", "onet"),
@@ -82,12 +82,12 @@ _S = [
     ("EE-PCB", "ออกแบบแผ่นวงจรพิมพ์จนสั่งผลิตแล้วใช้งานได้", "electrical", None, "market"),
     ("EE-DSP", "ประมวลผลสัญญาณดิจิทัลเพื่อดึงสิ่งที่ต้องการออกจากสัญญาณรบกวน", "electrical", None, "manual"),
     ("EE-CTRL", "ออกแบบระบบควบคุมป้อนกลับให้ระบบนิ่ง", "electrical", "tool-mathworks-simulink", "onet"),
-    ("EE-POWER", "ออกแบบระบบไฟฟ้ากำลังและพลังงานทดแทน", "electrical", None, "manual"),
+    ("EE-POWER", "ออกแบบระบบไฟฟ้ากำลังและเชื่อมพลังงานทดแทน", "electrical", None, "manual"),
     ("EE-PLC", "เขียนโปรแกรม PLC ควบคุมสายการผลิต", "electrical", "tool-programmable-logic-controller-plc-softwa", "onet"),
 
     # ══════════ อุตสาหการ ══════════
     ("IE-FLOW", "เขียนแผนภาพลำดับงานของกระบวนการจริง", "industrial", "tool-microsoft-visio", "onet"),
-    ("IE-TIME", "จับเวลาการทำงานและหาว่าขั้นตอนไหนเป็นคอขวด", "industrial", None, "manual"),
+    ("IE-TIME", "จับเวลางานและหาคอขวดในสายการผลิต", "industrial", None, "manual"),
     ("IE-SPC", "ใช้แผนภูมิควบคุมจับสัญญาณว่ากระบวนการกำลังเพี้ยน", "industrial", "tool-minitab", "onet"),
     ("IE-LAYOUT", "วางผังพื้นที่ทำงานตามลำดับการไหลของงาน", "industrial", None, "manual"),
     ("IE-SIM", "จำลองระบบคิวและสายการผลิตด้วยซอฟต์แวร์", "industrial", "tool-rockwell-automation-arena", "onet"),
@@ -96,7 +96,7 @@ _S = [
     ("IE-LEAN", "ปรับปรุงกระบวนการด้วยแนวคิดลีนจนวัดผลได้", "industrial", None, "market"),
 
     # ══════════ เครื่องกล ══════════
-    ("ME-STATICS", "คำนวณแรงและความเค้นในชิ้นส่วนว่ารับไหวไหม", "mechanical", None, "manual"),
+    ("ME-STATICS", "คำนวณแรงและความเค้นว่าชิ้นส่วนรับไหวไหม", "mechanical", None, "manual"),
     ("ME-MATERIAL", "เลือกวัสดุและวิธีผลิตให้เหมาะกับงานและงบ", "mechanical", "onet-engineering-and-technology", "onet"),
     ("ME-FAB", "สร้างชิ้นงานต้นแบบด้วยเครื่องมือในโรงงาน", "mechanical", None, "manual"),
     ("ME-THERMO", "วิเคราะห์การไหลและการถ่ายเทความร้อนในระบบ", "mechanical", "tool-ansys-fluent", "onet"),

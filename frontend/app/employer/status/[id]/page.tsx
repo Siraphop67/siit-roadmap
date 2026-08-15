@@ -28,14 +28,14 @@ export default function PostingStatusPage(props: PageProps<"/employer/status/[id
     api
       .postingStatus(id)
       .then(setRow)
-      .catch((e) => setFailed(e instanceof Error ? e.message : "โหลดไม่สำเร็จ"));
+      .catch((e) => setFailed(e instanceof Error ? e.message : "ไม่สามารถโหลดข้อมูลประกาศได้"));
   }, [id]);
 
   if (failed) {
     return (
-      <Page title="เช็คสถานะประกาศ">
+      <Page title="ตรวจสอบสถานะประกาศ">
         <Note tone="warn" title="ไม่พบประกาศนี้">
-          {failed} — ตรวจว่ารหัสที่ได้ตอนส่งถูกต้องไหม
+          {failed} กรุณาตรวจสอบว่ารหัสที่ได้รับเมื่อส่งประกาศถูกต้องหรือไม่
         </Note>
       </Page>
     );
@@ -43,8 +43,8 @@ export default function PostingStatusPage(props: PageProps<"/employer/status/[id
 
   if (!row) {
     return (
-      <Page title="เช็คสถานะประกาศ">
-        <p className="text-zinc-500">กำลังโหลด…</p>
+      <Page title="ตรวจสอบสถานะประกาศ">
+        <p className="text-zinc-500">กำลังโหลดข้อมูล</p>
       </Page>
     );
   }
@@ -54,13 +54,13 @@ export default function PostingStatusPage(props: PageProps<"/employer/status/[id
       <div className="space-y-5">
         <Note tone={TONE[row.status]} title={row.status_th}>
           {row.status === "pending" &&
-            "ทีมจะอ่านประกาศทั้งฉบับก่อนอนุมัติ เพราะเรายังไม่มีระบบยืนยันตัวตนองค์กร " +
-              "และไม่อยากให้ประกาศปลอมหลุดถึงนักศึกษา"}
+            "ทีมงานจะอ่านประกาศทั้งฉบับก่อนอนุมัติ เพราะเรายังไม่มีระบบยืนยันตัวตนองค์กร " +
+              "และไม่อยากให้ประกาศที่ไม่จริงหลุดไปถึงนักศึกษา"}
           {/* 🔒 ไม่พูดว่า "ถูกนับแล้ว" — ต้องรันท่อขั้นที่ 2 ก่อนถึงจะจริง (กติกาข้อ 5) */}
           {row.status === "approved" &&
-            "ทีมตรวจแล้วและอนุมัติ — ประกาศนี้จะถูกนับรวมในข้อมูลที่ระบบใช้บอกนักศึกษา " +
+            "ทีมงานตรวจและอนุมัติแล้ว ประกาศฉบับนี้จะถูกนับรวมในข้อมูลที่เราใช้บอกนักศึกษา " +
               "ว่าต้องเตรียมอะไรบ้าง ในการอัปเดตข้อมูลรอบถัดไป"}
-          {row.status === "rejected" && (row.review_note || "ทีมไม่ได้อนุมัติประกาศนี้")}
+          {row.status === "rejected" && (row.review_note || "ทีมงานไม่อนุมัติประกาศฉบับนี้")}
         </Note>
 
         <dl className="grid gap-3 text-[0.93rem] sm:grid-cols-2">
@@ -81,7 +81,7 @@ export default function PostingStatusPage(props: PageProps<"/employer/status/[id
         </dl>
 
         {row.review_note && row.status !== "rejected" && (
-          <Note tone="info" title="หมายเหตุจากทีม">
+          <Note tone="info" title="หมายเหตุจากทีมงาน">
             {row.review_note}
           </Note>
         )}
@@ -90,7 +90,7 @@ export default function PostingStatusPage(props: PageProps<"/employer/status/[id
           href="/employer"
           className="inline-block text-[0.95rem] font-semibold underline underline-offset-4"
         >
-          ← ลงประกาศอีกอัน
+          ← ลงประกาศฉบับใหม่
         </Link>
       </div>
     </Page>

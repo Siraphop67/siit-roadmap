@@ -19,6 +19,10 @@ def get_extractor() -> SkillExtractor:
     if provider == "local":
         from app.llm.local import LocalExtractor
         return LocalExtractor()
+    if provider in {"gemini", "google"}:
+        from app.llm.google import GeminiExtractor
+        return GeminiExtractor()
     raise ValueError(
-        f"ไม่รู้จัก LLM_PROVIDER={settings.llm_provider!r} — ใช้ keyword · local · anthropic"
+        f"ไม่รู้จัก LLM_PROVIDER={settings.llm_provider!r} — "
+        "ใช้ keyword · local · anthropic · gemini"
     )

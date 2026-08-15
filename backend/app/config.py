@@ -30,6 +30,22 @@ class Settings:
     anthropic_api_key: str | None = os.getenv("ANTHROPIC_API_KEY")
     llm_model: str = os.getenv("LLM_MODEL", "claude-sonnet-5")
 
+    # ── Gemini / Google AI Studio (LLM_PROVIDER=gemini) ──
+    # ชั้นฟรีใช้ได้จริง ขอ key ที่ https://aistudio.google.com/apikey
+    # 🔴 ชั้นฟรีระบุว่านำข้อมูลไปพัฒนาผลิตภัณฑ์ของ Google — อ่านหมายเหตุใน llm/google.py
+    #    ก่อนเอาไปใช้กับ CV ของผู้ใช้จริง
+    # SDK อ่านได้ทั้งสองชื่อ เรารับทั้งคู่จะได้ไม่ต้องมานั่งงงว่าตั้งตัวไหน
+    google_api_key: str | None = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    # 🔴 เลือกจาก "ให้ผลเดิมทุกครั้ง" ไม่ใช่ "เจอเยอะที่สุด" — เหตุผลเต็มใน DECISIONS D17
+    #    3.6-flash กับ 3.5-flash-lite ให้ผลไม่ซ้ำเดิมในการรัน 3 ครั้ง ทั้งที่ temperature=0
+    #    (ส่วนคิดของรุ่นใหม่ไม่นิ่ง) · วัดก่อน-หลังไม่ได้ถ้าตัวสกัดตอบไม่เหมือนเดิม
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    # งบส่วนคิด · ติดลบ = ไม่ส่งไปเลย ให้โมเดลตัดสินใจเอง ← ค่าเริ่มต้น
+    # 🔴 ห้ามตั้งเป็น 0 เป็นค่าเริ่มต้น — วัดแล้วว่า gemini-3.6-flash กับ 3.5-flash-lite
+    #    ตอบ 400 INVALID_ARGUMENT ทันทีที่ส่ง thinking_budget=0 ไป (รุ่นใหม่ไม่ให้ปิด)
+    #    ตั้งเป็นตัวเลข >= 0 ได้ถ้ารุ่นที่ใช้รองรับ
+    gemini_thinking_budget: int = int(os.getenv("GEMINI_THINKING_BUDGET", "-1"))
+
     # ── LLM ที่รันบนเครื่องตัวเอง (LLM_PROVIDER=local) ──
     # คุยผ่าน OpenAI-compatible chat completions — Ollama · LM Studio · llama.cpp · vLLM
     local_llm_base_url: str = os.getenv("LOCAL_LLM_BASE_URL", "http://localhost:11434/v1")
@@ -64,6 +80,8 @@ class Settings:
             return self.local_llm_model
         if self.llm_provider.lower() == "anthropic":
             return self.llm_model
+        if self.llm_provider.lower() in {"gemini", "google"}:
+            return self.gemini_model
         return self.llm_provider
 
     @property

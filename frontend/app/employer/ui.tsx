@@ -64,7 +64,7 @@ export function ErrorList({ errors }: { errors: string[] }) {
   return (
     <div className="rounded-lg border border-red-500/40 bg-red-50 px-4 py-3 dark:bg-red-950/30">
       <p className="font-semibold text-red-700 dark:text-red-300">
-        ยังส่งไม่ได้ — แก้ {errors.length} จุดนี้ก่อน
+ยังส่งไม่ได้ — แก้อีก {errors.length} จุด
       </p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.9rem] text-red-800 dark:text-red-200">
         {errors.map((e) => (

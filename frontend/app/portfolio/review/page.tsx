@@ -18,12 +18,12 @@ function ReviewContent() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!documentId) { Promise.resolve().then(() => setError("ไม่พบเอกสารสำหรับตรวจผล กรุณาอัปโหลดใหม่")); return; }
+    if (!documentId) { Promise.resolve().then(() => setError("ไม่พบเอกสารสำหรับตรวจสอบ กรุณาอัปโหลดใหม่อีกครั้ง")); return; }
     api.document(documentId).then((data) => {
       setDocument(data);
       setDecisions(Object.fromEntries(data.extracted.map((item) => [item.id, item.user_status === "pending" ? "confirmed" : item.user_status as Decision])));
       setLevels(Object.fromEntries(data.extracted.map((item) => [item.id, item.level])));
-    }).catch((e: unknown) => setError(e instanceof Error ? e.message : "โหลดผลสกัดไม่สำเร็จ"));
+    }).catch((e: unknown) => setError(e instanceof Error ? e.message : "โหลดผลการสกัดทักษะไม่ได้ในตอนนี้"));
   }, [documentId]);
 
   const highlighted = useMemo(() => {
@@ -36,12 +36,12 @@ function ReviewContent() {
 
   async function confirm() {
     const uid = session.read();
-    if (!documentId || !uid) return setError("ไม่พบ session กรุณาเริ่มใหม่จากหน้าแรก");
+    if (!documentId || !uid) return setError("ไม่พบข้อมูลการใช้งาน กรุณาเริ่มใหม่จากหน้าแรก");
     setBusy(true); setError("");
     try {
       await api.confirmExtraction(documentId, { user_id: uid, decisions, levels });
       router.push("/skills");
-    } catch (e) { setError(e instanceof Error ? e.message : "บันทึกผลยืนยันไม่สำเร็จ"); }
+    } catch (e) { setError(e instanceof Error ? e.message : "ไม่สามารถบันทึกผลการยืนยันได้"); }
     finally { setBusy(false); }
   }
 
@@ -49,19 +49,19 @@ function ReviewContent() {
     <WorkspaceSidebar active="portfolio" />
     <main className="flex-1 px-margin-mobile md:px-gutter py-stack-lg overflow-y-auto">
       <div className="max-w-container-max mx-auto">
-        <div className="mb-stack-lg"><span className="text-label-sm text-primary font-semibold uppercase tracking-wider">ขั้นตอนยืนยันผล</span><h1 className="mt-2 font-headline-lg text-[28px] md:text-headline-lg font-bold">ตรวจทักษะที่ระบบพบ</h1><p className="mt-2 text-text-subtle max-w-3xl">ระบบจะยังไม่นับทักษะเหล่านี้จนกว่าคุณจะยืนยัน ตรวจข้อความต้นทาง ระดับ และปฏิเสธรายการที่ไม่ตรงได้ทีละข้อ</p></div>
+        <div className="mb-stack-lg"><span className="text-label-sm text-primary font-semibold uppercase tracking-wider">ขั้นตอนยืนยันผล</span><h1 className="mt-2 font-headline-lg text-[28px] md:text-headline-lg font-bold">ตรวจทักษะที่เราอ่านได้จากเอกสารของคุณ</h1><p className="mt-2 text-text-subtle max-w-3xl">เราจะยังไม่นับทักษะเหล่านี้จนกว่าคุณจะยืนยัน ตรวจข้อความต้นทาง ปรับระดับ หรือปฏิเสธข้อที่ไม่ตรงได้ทีละข้อ</p></div>
         {error && <div className="mb-stack-md"><InlineNotice tone="error">{error}</InlineNotice></div>}
-        {!document && !error && <p className="py-20 text-center text-text-subtle">กำลังโหลดผลวิเคราะห์…</p>}
+        {!document && !error && <p className="py-20 text-center text-text-subtle">กำลังโหลดผลการวิเคราะห์</p>}
         {document && <div className="grid lg:grid-cols-[1.1fr_.9fr] gap-gutter items-start">
           <section className="bg-white border border-border-low rounded-xl overflow-hidden lg:sticky lg:top-6"><div className="p-4 border-b border-border-low flex justify-between"><h2 className="font-headline-md text-lg font-semibold">ข้อความต้นทาง</h2><span className="text-xs text-text-subtle">{document.kind.toUpperCase()} · {document.raw_text.length.toLocaleString()} ตัวอักษร</span></div><div className="p-5 max-h-[68vh] overflow-auto whitespace-pre-wrap text-sm leading-7 text-on-surface-variant">{highlighted}</div></section>
-          <section className="space-y-3"><div className="flex items-center justify-between mb-2"><h2 className="font-headline-md text-lg font-semibold">พบ {document.extracted.length} ทักษะ</h2><span className="text-xs text-text-subtle">ตัวสกัด: {document.extractor}</span></div>
+          <section className="space-y-3"><div className="flex items-center justify-between mb-2"><h2 className="font-headline-md text-lg font-semibold">พบ {document.extracted.length} ทักษะ</h2><span className="text-xs text-text-subtle">วิธีสกัด: {document.extractor}</span></div>
             {document.extracted.map((item) => <article key={item.id} className={`bg-white border rounded-xl p-4 ${decisions[item.id] === "rejected" ? "border-error/30 opacity-70" : "border-border-low"}`}>
-              <div className="flex gap-3 justify-between"><div><h3 className="font-semibold">{item.name_th}</h3><p className="text-xs text-text-subtle mt-1">หลักฐาน “{item.span_text}” · ความมั่นใจ {Math.round(item.confidence * 100)}%</p></div><span className="rounded-full bg-primary-fixed px-2 py-1 text-xs text-primary self-start">ระดับ {levels[item.id]}</span></div>
-              <div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => setDecisions((d) => ({...d, [item.id]: "confirmed"}))} className={`rounded-lg border px-3 py-2 text-sm flex items-center justify-center gap-1 ${decisions[item.id] !== "rejected" ? "border-primary bg-primary-fixed text-primary" : "border-border-low"}`}><Icon className="text-base">check</Icon>ยืนยัน</button><button onClick={() => setDecisions((d) => ({...d, [item.id]: "rejected"}))} className={`rounded-lg border px-3 py-2 text-sm flex items-center justify-center gap-1 ${decisions[item.id] === "rejected" ? "border-error bg-error-container text-error" : "border-border-low"}`}><Icon className="text-base">close</Icon>ไม่ใช่</button></div>
+              <div className="flex gap-3 justify-between"><div><h3 className="font-semibold">{item.name_th}</h3><p className="text-xs text-text-subtle mt-1">หลักฐานอ้างอิง “{item.span_text}” · ระดับความเชื่อมั่น {Math.round(item.confidence * 100)}%</p></div><span className="rounded-full bg-primary-fixed px-2 py-1 text-xs text-primary self-start">ระดับ {levels[item.id]}</span></div>
+              <div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => setDecisions((d) => ({...d, [item.id]: "confirmed"}))} className={`rounded-lg border px-3 py-2 text-sm flex items-center justify-center gap-1 ${decisions[item.id] !== "rejected" ? "border-primary bg-primary-fixed text-primary" : "border-border-low"}`}><Icon className="text-base">check</Icon>ยืนยัน</button><button onClick={() => setDecisions((d) => ({...d, [item.id]: "rejected"}))} className={`rounded-lg border px-3 py-2 text-sm flex items-center justify-center gap-1 ${decisions[item.id] === "rejected" ? "border-error bg-error-container text-error" : "border-border-low"}`}><Icon className="text-base">close</Icon>ไม่ถูกต้อง</button></div>
               {decisions[item.id] !== "rejected" && <label className="mt-3 block text-xs text-text-subtle">ระดับทักษะ<select value={levels[item.id]} onChange={(e) => { const level = Number(e.target.value); setLevels((l) => ({...l, [item.id]: level})); setDecisions((d) => ({...d, [item.id]: level === item.level ? "confirmed" : "edited"})); }} className="mt-1 w-full border border-border-low rounded-lg p-2 text-sm text-on-surface bg-white">{[1,2,3].map((level) => <option key={level} value={level}>{level} — {LEVEL_LABELS[level]}</option>)}</select></label>}
             </article>)}
-            {document.extracted.length === 0 && <InlineNotice>ยังไม่พบทักษะที่จับคู่กับคลัง 73 ทักษะ ลองเพิ่มรายละเอียดเครื่องมือหรือสิ่งที่คุณลงมือทำจริง</InlineNotice>}
-            <button onClick={confirm} disabled={busy || document.extracted.length === 0} className="w-full bg-primary text-on-primary rounded-lg py-3 font-semibold hover:bg-primary-container disabled:opacity-50">{busy ? "กำลังบันทึก…" : "ยืนยันและดู Skill Graph"}</button>
+            {document.extracted.length === 0 && <InlineNotice>ยังไม่พบทักษะที่ตรงกับคลังทักษะทั้ง 73 ทักษะ กรุณาเพิ่มรายละเอียดเครื่องมือหรือสิ่งที่คุณลงมือปฏิบัติจริง</InlineNotice>}
+            <button onClick={confirm} disabled={busy || document.extracted.length === 0} className="w-full bg-primary text-on-primary rounded-lg py-3 font-semibold hover:bg-primary-container disabled:opacity-50">{busy ? "กำลังบันทึก" : "ยืนยันและดูแผนผังทักษะ"}</button>
           </section>
         </div>}
       </div>
@@ -70,4 +70,4 @@ function ReviewContent() {
   </div>;
 }
 
-export default function ReviewPage() { return <Suspense fallback={<div className="p-10">กำลังโหลด…</div>}><ReviewContent /></Suspense>; }
+export default function ReviewPage() { return <Suspense fallback={<div className="p-10">กำลังโหลดข้อมูล</div>}><ReviewContent /></Suspense>; }

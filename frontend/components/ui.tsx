@@ -162,7 +162,7 @@ export function LinkButton({
   );
 }
 
-export function Loading({ label = "กำลังโหลด" }: { label?: string }) {
+export function Loading({ label = "กำลังโหลดข้อมูล" }: { label?: string }) {
   return (
     <div className="shell py-24 text-center text-faint">
       <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />

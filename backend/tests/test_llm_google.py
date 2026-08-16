@@ -242,6 +242,98 @@ def test_เรียกไม่สำเร็จแบบไม่รู้�
         GeminiExtractor(client=RaisingClient(Exception("อะไรสักอย่าง"))).extract(CV)
 
 
+# ═════════════ ลองใหม่เมื่อเซิร์ฟเวอร์แน่น ═════════════
+#
+# 🔴 วัดจริงแล้ว: gemini-3.5-flash ตอบ 503 ไป 2 ใน 3 ครั้ง (ดู DECISIONS D17)
+#    503 ไม่ใช่ความผิดของเรา และมักหายเองในไม่กี่วินาที — ปล่อยให้ผู้ใช้เห็น error
+#    ทั้งที่กดใหม่แล้วผ่าน เป็นการโยนภาระให้ผู้ใช้แก้ปัญหาของ Google
+#
+# 🔒 แต่ห้ามลองใหม่กับทุกอย่าง — 429 คือเราส่งเกินโควตา ยิงซ้ำยิ่งแย่
+#    400/404 คือคำขอผิดตั้งแต่แรก ยิงกี่รอบก็ผิดเหมือนเดิม
+
+
+class FlakyClient:
+    """ล้มไปก่อน `fail_times` ครั้ง แล้วค่อยสำเร็จ — นับจำนวนครั้งที่ถูกเรียกจริง"""
+
+    def __init__(self, exc, fail_times: int, response=None):
+        self._exc, self._fail_times, self._response = exc, fail_times, response
+        self.calls = 0
+        self.models = self
+
+    def generate_content(self, **kwargs):
+        self.calls += 1
+        if self.calls <= self._fail_times:
+            raise self._exc
+        return self._response
+
+
+def unavailable() -> Exception:
+    return Exception("503 UNAVAILABLE. This model is currently experiencing high demand.")
+
+
+@pytest.fixture(autouse=True)
+def _no_real_waiting(monkeypatch):
+    """เทสต์ต้องไม่รอจริง — เก็บไว้ตรวจว่าหน่วงเพิ่มขึ้นจริงไหม"""
+    slept: list[float] = []
+    monkeypatch.setattr("app.llm.google._sleep", slept.append)
+    return slept
+
+
+def test_เจอ503แล้วลองใหม่จนสำเร็จผู้ใช้ไม่เห็นerrorเลย():
+    client = FlakyClient(unavailable(), fail_times=1,
+                         response=FakeResponse(payload(row())))
+    spans = GeminiExtractor(client=client).extract(CV)
+
+    assert len(spans) == 1, "ครั้งที่สองสำเร็จแล้ว ต้องได้ผลปกติ"
+    assert client.calls == 2
+
+
+def test_ลองใหม่ได้หลายรอบ():
+    client = FlakyClient(unavailable(), fail_times=2,
+                         response=FakeResponse(payload(row())))
+    assert len(GeminiExtractor(client=client).extract(CV)) == 1
+    assert client.calls == 3
+
+
+def test_แน่นตลอดสุดท้ายก็ยอมแพ้แต่บอกว่าลองมากี่ครั้งแล้ว():
+    """🔒 กติกาข้อ 5 — ยอมแพ้ได้ แต่ต้องบอกตามจริงว่าพยายามไปเท่าไหร่"""
+    client = FlakyClient(unavailable(), fail_times=99)
+    with pytest.raises(ExtractorError) as exc:
+        GeminiExtractor(client=client).extract(CV)
+
+    assert client.calls == GeminiExtractor.MAX_ATTEMPTS
+    assert str(client.calls) in str(exc.value), "ต้องบอกจำนวนครั้งที่ลอง"
+
+
+def test_หน่วงนานขึ้นทุกรอบไม่ใช่ยิงรัวติดกัน(_no_real_waiting):
+    """ยิงรัวตอนเซิร์ฟเวอร์แน่นคือการซ้ำเติม — ต้องถอยห่างขึ้นเรื่อย ๆ"""
+    with pytest.raises(ExtractorError):
+        GeminiExtractor(client=FlakyClient(unavailable(), fail_times=99)).extract(CV)
+
+    assert len(_no_real_waiting) == GeminiExtractor.MAX_ATTEMPTS - 1, "รอบสุดท้ายไม่ต้องหน่วง"
+    assert _no_real_waiting == sorted(_no_real_waiting)
+    assert _no_real_waiting[0] < _no_real_waiting[-1], "ต้องนานขึ้นจริง"
+
+
+@pytest.mark.parametrize("raw,why", [
+    ("429 RESOURCE_EXHAUSTED. Quota exceeded.", "โควตาหมด ยิงซ้ำยิ่งแย่"),
+    ("400 INVALID_ARGUMENT. Request contains an invalid argument.", "คำขอผิดตั้งแต่แรก"),
+    ("404 NOT_FOUND. This model is no longer available.", "รุ่นนี้เรียกไม่ได้"),
+    ("400 INVALID_ARGUMENT. API key not valid.", "key ผิด"),
+])
+def test_ไม่ลองใหม่กับความผิดพลาดที่ยิงซ้ำก็ไม่หาย(raw, why):
+    client = FlakyClient(Exception(raw), fail_times=99)
+    with pytest.raises(ExtractorError):
+        GeminiExtractor(client=client).extract(CV)
+    assert client.calls == 1, f"{why} — ต้องเลิกตั้งแต่ครั้งแรก"
+
+
+def test_ข้อความ503ยังบอกสาเหตุเดิมหลังยอมแพ้():
+    with pytest.raises(ExtractorError) as exc:
+        GeminiExtractor(client=FlakyClient(unavailable(), fail_times=99)).extract(CV)
+    assert "503" in str(exc.value) or "แน่น" in str(exc.value)
+
+
 def test_ไม่มีkeyและไม่มีclientสร้างไม่ได้พร้อมบอกทางออก(monkeypatch):
     monkeypatch.setattr("app.config.settings.google_api_key", None)
     with pytest.raises(RuntimeError) as exc:

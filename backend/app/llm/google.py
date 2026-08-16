@@ -24,6 +24,8 @@ Flash ตอบในไม่กี่วินาที — สาธิต LL
 
 from __future__ import annotations
 
+import time
+
 from app.config import settings
 from app.llm.base import (
     SYSTEM_PROMPT,
@@ -37,6 +39,25 @@ from app.seed.skills import SKILLS
 #    ส่วนคิดใช้โควตา output ร่วมกับคำตอบ เหมือนบั๊กข้อ 2 ใน D13 เป๊ะ
 #    (ค่าเริ่มต้นเราปิดส่วนคิดไว้อยู่แล้ว นี่คือเผื่อไว้ให้คนที่เปิดมันกลับมา)
 MAX_TOKENS = 8000
+
+#: หน่วงก่อนลองใหม่ครั้งแรก แล้วคูณสองไปเรื่อย ๆ (2 วินาที → 4 วินาที)
+#: ไม่ใส่ค่าสุ่ม (jitter) เพราะเรามีเครื่องเดียวยิง ไม่ได้มีหลายตัวแย่งกันกลับมาพร้อมกัน
+BACKOFF_SECONDS = 2.0
+
+
+def _sleep(seconds: float) -> None:
+    """แยกออกมาเป็นฟังก์ชันเพื่อให้เทสต์แทนได้ — เทสต์ต้องไม่รอจริง"""
+    time.sleep(seconds)
+
+
+def _is_busy(exc: Exception) -> bool:
+    """เซิร์ฟเวอร์แน่นชั่วคราวหรือเปล่า — อย่างเดียวที่ลองใหม่แล้วมีความหมาย
+
+    🔒 ห้ามรวม 429 เข้ามา — นั่นคือเราส่งเกินโควตา ยิงซ้ำยิ่งทำให้แย่ลง
+       และห้ามรวม 400/404 — คำขอผิดตั้งแต่แรก ยิงกี่รอบก็ผิดเหมือนเดิม
+    """
+    raw = str(exc)
+    return "503" in raw or "UNAVAILABLE" in raw
 
 #: โครงคำตอบที่บังคับกับโมเดล — ตัดปัญหา "ตอบไม่เป็น JSON" ทิ้งไปทั้งชุด
 #: แต่ยังส่งต่อให้ parse_payload() ตรวจอยู่ดี เพราะ schema กันการ "แต่งข้อความ" ไม่ได้
@@ -63,6 +84,11 @@ RESPONSE_SCHEMA = {
 
 class GeminiExtractor:
     name = "gemini"
+
+    #: ยิงได้มากสุดกี่ครั้งต่อการอ่านหนึ่งเอกสาร (รวมครั้งแรก)
+    #: 🔴 3 ครั้งเพราะวัดแล้วว่า 503 ของชั้นฟรีมักหายใน 2–3 วินาที (D17)
+    #:    ตั้งสูงกว่านี้ผู้ใช้จะรอนานโดยไม่รู้ว่าเกิดอะไรขึ้น — 2+4 = ช้าสุด 6 วินาที
+    MAX_ATTEMPTS = 3
 
     def __init__(self, client=None) -> None:
         """`client` มีไว้ให้เทสต์ยัดตัวปลอมเข้ามา — ใช้งานจริงปล่อยเป็น None"""
@@ -143,7 +169,7 @@ class GeminiExtractor:
             f"Gemini ตอบกลับมาโดยไม่มีข้อความ (finish_reason={reason or 'ไม่ทราบ'})"
         )
 
-    def _explain_api_error(self, exc: Exception) -> str:
+    def _explain_api_error(self, exc: Exception, *, attempts: int = 1) -> str:
         """แปลง error ของ SDK เป็นข้อความที่บอกว่าต้องไปแก้ตรงไหน
 
         🔴 เจอจริงตอนยิงครั้งแรก — SDK โยน ClientError ทะลุขึ้นมาเป็น traceback
@@ -175,27 +201,40 @@ class GeminiExtractor:
                 "ไม่ให้ปิดส่วนคิด · ตั้งเป็น -1 เพื่อไม่ส่งค่านี้ไปเลย"
             )
         if "503" in raw or "UNAVAILABLE" in raw:
+            # 🔒 กติกาข้อ 5 — ยอมแพ้ได้ แต่ต้องบอกตามจริงว่าพยายามไปกี่ครั้งแล้ว
+            #    ไม่งั้นผู้ใช้จะไม่รู้ว่าระบบลองให้แล้ว และกดซ้ำเองอีกโดยเปล่าประโยชน์
             return (
                 f"รุ่น {self.model!r} คนใช้แน่นอยู่ (503) ไม่ใช่ระบบเราพัง — "
+                f"ลองให้แล้ว {attempts} ครั้งยังไม่ผ่าน "
                 "รอสักครู่แล้วลองใหม่ หรือสลับไปรุ่นอื่นด้วย GEMINI_MODEL"
             )
         return f"เรียก Gemini ไม่สำเร็จ — {type(exc).__name__}: {raw[:300]}"
 
-    def extract(self, raw_text: str) -> list[ExtractedSpan]:
-        try:
-            response = self._get_client().models.generate_content(
-                model=self.model,
-                contents=(
-                    f"รายการทักษะที่รู้จัก:\n{self._skill_catalogue()}\n\n"
-                    f"เอกสารของผู้ใช้:\n<document>\n{raw_text}\n</document>"
-                ),
-                config=self._config(),
-            )
-        except ExtractorError:
-            raise                      # ของเราเอง (เช่นยังไม่ได้ติดตั้งไลบรารี) ปล่อยผ่าน
-        except Exception as exc:       # noqa: BLE001 — ในบล็อกนี้มีแค่การเรียก API
-            raise ExtractorError(self._explain_api_error(exc)) from exc
+    def _call(self, raw_text: str):
+        """ยิงจริง พร้อมลองใหม่เมื่อเซิร์ฟเวอร์แน่น
 
+        🔴 503 ไม่ใช่ความผิดของเราและมักหายเองในไม่กี่วินาที (วัดไว้ใน D17 ว่า
+           gemini-3.5-flash ตอบ 503 ไป 2 ใน 3 ครั้ง) — ถ้าไม่ลองใหม่ให้ ก็เท่ากับ
+           โยนภาระให้ผู้ใช้กดเองซ้ำ ๆ เพื่อแก้ปัญหาที่ฝั่ง Google
+        """
+        contents = (
+            f"รายการทักษะที่รู้จัก:\n{self._skill_catalogue()}\n\n"
+            f"เอกสารของผู้ใช้:\n<document>\n{raw_text}\n</document>"
+        )
+        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+            try:
+                return self._get_client().models.generate_content(
+                    model=self.model, contents=contents, config=self._config())
+            except ExtractorError:
+                raise                  # ของเราเอง (เช่นยังไม่ได้ติดตั้งไลบรารี) ปล่อยผ่าน
+            except Exception as exc:   # noqa: BLE001 — ในบล็อกนี้มีแค่การเรียก API
+                if not _is_busy(exc) or attempt == self.MAX_ATTEMPTS:
+                    raise ExtractorError(
+                        self._explain_api_error(exc, attempts=attempt)) from exc
+                _sleep(BACKOFF_SECONDS * 2 ** (attempt - 1))
+
+    def extract(self, raw_text: str) -> list[ExtractedSpan]:
+        response = self._call(raw_text)
         return parse_payload(
             self._text_or_explain(response), raw_text, {s["id"] for s in SKILLS}
         )
